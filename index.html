@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JK Powerguard Solar System Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            position: relative;
+        }
+
+        /* ── Watermark layer ── */
+        #watermark-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        #watermark-layer canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Ensure all app content sits above watermark */
+        .max-w-7xl {
+            position: relative;
+            z-index: 1;
+        }
+        /* Custom scrollbar for table container */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen p-4 md:p-8">
+
+    <!-- Background Watermark -->
+    <div id="watermark-layer" aria-hidden="true">
+        <canvas id="watermark-canvas"></canvas>
+    </div>
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Company Logo Banner -->
+        <div class="w-full mb-2">
+            <img
+                id="company-logo"
+                src="assets/images/jkpower_logo.png"
+                alt="Company Logo"
+                onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';"
+                class="w-full rounded-2xl object-contain shadow-sm border border-slate-200 bg-white"
+                style="aspect-ratio: 3110 / 826; max-height: 160px; object-fit: contain;"
+            >
+            <!-- Fallback placeholder shown when logo asset is not yet added -->
+            <div
+                id="logo-placeholder"
+                class="w-full rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 items-center justify-center text-slate-400 font-medium text-sm"
+                style="display:none; aspect-ratio: 3110 / 826; max-height: 160px;"
+            >
+                <span>Your Company Logo (3110 × 826)</span>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="flex items-center space-x-4 mb-8">
+            <div class="p-3.5 bg-blue-600 rounded-xl shadow-lg shadow-blue-200 flex items-center justify-center">
+                <i data-lucide="sun" class="text-white w-8 h-8"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+                    JK Powerguard Solar System Calculator
+                </h1>
+                <p class="text-slate-500 font-medium text-sm md:text-base">Hybrid & Off-Grid Investment & ROI Analytics</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Column: Inputs -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- System Parameters -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center space-x-2">
+                        <i data-lucide="settings" class="text-slate-500 w-5 h-5"></i>
+                        <h2 class="text-lg font-bold text-slate-800">System Parameters</h2>
+                    </div>
+                    <div class="p-5 space-y-5">
+                        
+                        <!-- Input Group: Solar Capacity -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-end mb-2">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700">Solar Capacity</label>
+                                </div>
+                                <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                    <input type="number" id="num_point1" min="0.5" max="100" step="0.5" value="1" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <span class="ml-1 text-sm font-medium text-slate-500">kW</span>
+                                </div>
+                            </div>
+                            <input type="range" id="range_point1" min="0.5" max="100" step="0.5" value="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <!-- Input Group: Daily Generation -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-end mb-2">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700">Daily Generation</label>
+                                    <p class="text-xs text-slate-500 mt-0.5">(Per kW per day)</p>
+                                </div>
+                                <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                    <input type="number" id="num_point2" min="3" max="6" step="0.1" value="4" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <span class="ml-1 text-sm font-medium text-slate-500">kWh</span>
+                                </div>
+                            </div>
+                            <input type="range" id="range_point2" min="3" max="6" step="0.1" value="4" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <!-- Input Group: Solar Hour Consumption -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-end mb-2">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700">Solar Hour Consumption.</label>
+                                    <p class="text-xs text-slate-500 mt-0.5">(9 AM - 5 PM)</p>
+                                </div>
+                                <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                    <input type="number" id="num_x" min="0" max="100" step="1" value="50" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <span class="ml-1 text-sm font-medium text-slate-500">%</span>
+                                </div>
+                            </div>
+                            <input type="range" id="range_x" min="0" max="100" step="1" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Tariff Rates -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center space-x-2">
+                        <i data-lucide="indian-rupee" class="text-slate-500 w-5 h-5"></i>
+                        <h2 class="text-lg font-bold text-slate-800">Tariff Rates</h2>
+                    </div>
+                    <div class="p-5 space-y-5">
+                        
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-end mb-2">
+                                <div><label class="block text-sm font-semibold text-slate-700">Average Unit Rate</label></div>
+                                <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                    <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
+                                    <input type="number" id="num_rate7a" min="0" max="50" step="0.5" value="15" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                </div>
+                            </div>
+                            <input type="range" id="range_rate7a" min="0" max="50" step="0.5" value="15" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-end mb-2">
+                                <div><label class="block text-sm font-semibold text-slate-700">Grid Support Charge</label></div>
+                                <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                    <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
+                                    <input type="number" id="num_gsc7b" min="0" max="20" step="0.1" value="2" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                </div>
+                            </div>
+                            <input type="range" id="range_gsc7b" min="0" max="20" step="0.1" value="2" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-end mb-2">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700">Demand Charge</label>
+                                    <p class="text-xs text-slate-500 mt-0.5">Per kW monthly</p>
+                                </div>
+                                <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                    <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
+                                    <input type="number" id="num_point10" min="0" max="5000" step="50" value="0" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                </div>
+                            </div>
+                            <input type="range" id="range_point10" min="0" max="5000" step="50" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Advanced Cost Constants -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <button onclick="toggleAdvanced()" class="w-full bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between hover:bg-slate-100 transition-colors duration-150">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="sliders-horizontal" class="text-slate-500 w-5 h-5"></i>
+                            <h2 class="text-lg font-bold text-slate-800">Advanced Constants</h2>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-medium text-slate-400 italic" id="adv-hint">click to expand</span>
+                            <i data-lucide="chevron-down" class="text-slate-400 w-5 h-5 transition-transform duration-200" id="adv-chevron"></i>
+                        </div>
+                    </button>
+
+                    <div id="adv-panel" class="hidden">
+                        <div class="px-5 pt-4 pb-2">
+                            <p class="text-xs text-slate-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                ⚙️ These values are used in the investment &amp; ROI formulas. Change them to match your actual cost structure. Original defaults are shown as placeholders.
+                            </p>
+                        </div>
+                        <div class="p-5 pt-3 space-y-4">
+
+                            <!-- On-Grid Base Cost -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700">On-Grid Cost</label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Per kW (panels + on-grid inverter)</p>
+                                    </div>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                        <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
+                                        <input type="number" id="const_ongrid" min="1000" max="200000" step="500" value="13000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-right text-slate-400 mt-1">Default: ₹13,000 / kW</p>
+                            </div>
+
+                            <!-- Battery Cost per kWh -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700">Battery Cost</label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Per kWh of battery bank</p>
+                                    </div>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                        <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
+                                        <input type="number" id="const_battery" min="1000" max="100000" step="500" value="16000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-right text-slate-400 mt-1">Default: ₹16,000 / kWh</p>
+                            </div>
+
+                            <!-- Hybrid Inverter Upgrade Cost -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700">Hybrid Inverter Upgrade</label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Extra cost per kW (on-grid → hybrid)</p>
+                                    </div>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                        <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
+                                        <input type="number" id="const_hybrid_inv" min="1000" max="200000" step="500" value="27000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-right text-slate-400 mt-1">Default: ₹27,000 / kW</p>
+                            </div>
+
+                            <!-- Off-Grid Full System Cost -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700">Off-Grid System Cost</label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Per kW (new full off-grid system)</p>
+                                    </div>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                        <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
+                                        <input type="number" id="const_offgrid" min="1000" max="300000" step="500" value="40000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-right text-slate-400 mt-1">Default: ₹40,000 / kW</p>
+                            </div>
+
+                            <!-- Hybrid Battery Multiplier -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700">Hybrid Battery Multiplier</label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Extra battery factor (Hybrid)</p>
+                                    </div>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                        <span class="mr-1 text-sm font-medium text-slate-500">×</span>
+                                        <input type="number" id="const_hybrid_mult" min="1" max="3" step="0.05" value="1.25" class="w-16 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-right text-slate-400 mt-1">Default: 1.25× (25% extra)</p>
+                            </div>
+
+                            <!-- Off-Grid Battery Multiplier -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700">Off-Grid Battery Multiplier</label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Extra battery factor (Off-Grid)</p>
+                                    </div>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                        <span class="mr-1 text-sm font-medium text-slate-500">×</span>
+                                        <input type="number" id="const_offgrid_mult" min="1" max="5" step="0.1" value="2" class="w-16 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-right text-slate-400 mt-1">Default: 2× (100% extra)</p>
+                            </div>
+
+                            <!-- Days per Month -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700">Days per Month</label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Used in monthly savings calculation</p>
+                                    </div>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
+                                        <input type="number" id="const_days" min="28" max="31" step="1" value="30" class="w-16 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <span class="ml-1 text-sm font-medium text-slate-500">days</span>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-right text-slate-400 mt-1">Default: 30 days</p>
+                            </div>
+
+                            <!-- Reset Button -->
+                            <button onclick="resetConstants()" class="w-full mt-2 py-2 px-4 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 text-sm font-semibold rounded-lg border border-slate-200 transition-colors duration-150 flex items-center justify-center space-x-2">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                <span>Reset to Defaults</span>
+                            </button>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Outputs -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <!-- System Sizing Specs -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-start space-x-4">
+                        <div class="p-3 rounded-lg bg-amber-500">
+                            <i data-lucide="zap" class="text-white w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Solar Consumption</p>
+                            <h4 class="text-xl font-bold text-slate-800 mt-1"><span id="out_y">0.00</span> kWh</h4>
+                            <p class="text-xs font-medium text-slate-400 mt-1"><span id="out_x_percent">0</span>% of total generation</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-start space-x-4">
+                        <div class="p-3 rounded-lg bg-indigo-500">
+                            <i data-lucide="clock" class="text-white w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Non-Solar Consumption</p>
+                            <h4 class="text-xl font-bold text-slate-800 mt-1"><span id="out_d">0.00</span> kWh</h4>
+                            <p class="text-xs font-medium text-slate-400 mt-1"><span id="out_p_percent">0</span>% of total generation</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-start space-x-4">
+                        <div class="p-3 rounded-lg bg-emerald-500">
+                            <i data-lucide="battery" class="text-white w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Battery Bank Req.</p>
+                            <h4 class="text-xl font-bold text-slate-800 mt-1"><span id="out_battery">0.00</span> kWh</h4>
+                            <p class="text-xs font-medium text-slate-400 mt-1">Hybrid: <span id="out_hybrid_mult">1.25</span>× | Off-Grid: <span id="out_offgrid_mult">2</span>×</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Investment Costs -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4">
+                        <h2 class="text-lg font-bold text-slate-800">Investment & Costs</h2>
+                    </div>
+                    <div class="p-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- Hybrid Costs -->
+                            <div class="space-y-4">
+                                <h3 class="font-semibold text-slate-700 flex items-center">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    Hybrid Options (25% Extra Battery)
+                                </h3>
+                                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-blue-800">Upgrade (On-Grid to Hybrid)</span>
+                                        <span class="font-bold text-blue-900" id="out_cost6a">₹0</span>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-blue-800">Entire New Hybrid System</span>
+                                        <span class="font-bold text-blue-900" id="out_cost6b">₹0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Off-Grid Costs -->
+                            <div class="space-y-4">
+                                <h3 class="font-semibold text-slate-700 flex items-center">
+                                    <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+                                    Off-Grid Options (100% Extra Battery)
+                                </h3>
+                                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-emerald-800">Upgrade (On-Grid to Off-Grid)</span>
+                                        <span class="font-bold text-emerald-900" id="out_cost6c">₹0</span>
+                                    </div>
+                                </div>
+                                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-emerald-800">Entire New Off-Grid System</span>
+                                        <span class="font-bold text-emerald-900" id="out_cost6d">₹0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Returns -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center space-x-2">
+                        <i data-lucide="trending-up" class="text-slate-500 w-5 h-5"></i>
+                        <h2 class="text-lg font-bold text-slate-800">Financial Returns (ROI & Payback)</h2>
+                    </div>
+                    <div class="p-5">
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-slate-100 p-3 rounded-lg text-center">
+                                <p class="text-xs text-slate-500 mb-1">Savings per Unit</p>
+                                <p class="font-bold text-slate-800" id="out_savings7c">₹0</p>
+                            </div>
+                            <div class="bg-slate-100 p-3 rounded-lg text-center">
+                                <p class="text-xs text-slate-500 mb-1">Standard Monthly Savings</p>
+                                <p class="font-bold text-slate-800" id="out_monthly_savings">₹0</p>
+                            </div>
+                            <div class="bg-slate-100 p-3 rounded-lg text-center">
+                                <p class="text-xs text-slate-500 mb-1">For Off-Grid</p>
+                                <p class="font-bold text-slate-800" id="out_total_savings">₹0</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse min-w-[500px]">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-sm text-slate-500">
+                                        <th class="py-3 px-4 font-semibold">System Option</th>
+                                        <th class="py-3 px-4 font-semibold text-right">ROI (% p.a.)</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Payback (Months)</th>
+                                        <th class="py-3 px-4 font-semibold text-right">Payback (Years)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm">
+                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td class="py-3 px-4 font-medium text-slate-800">Hybrid Upgrade</td>
+                                        <td class="py-3 px-4 text-right text-emerald-600 font-bold" id="tbl_roi_6a">0.00%</td>
+                                        <td class="py-3 px-4 text-right font-medium" id="tbl_payback_mo_6a">0.00 mo</td>
+                                        <td class="py-3 px-4 text-right text-slate-500" id="tbl_payback_yr_6a">0.00 yr</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td class="py-3 px-4 font-medium text-slate-800">New Hybrid System</td>
+                                        <td class="py-3 px-4 text-right text-emerald-600 font-bold" id="tbl_roi_6b">0.00%</td>
+                                        <td class="py-3 px-4 text-right font-medium" id="tbl_payback_mo_6b">0.00 mo</td>
+                                        <td class="py-3 px-4 text-right text-slate-500" id="tbl_payback_yr_6b">0.00 yr</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td class="py-3 px-4 font-medium text-slate-800">
+                                            Off-Grid Upgrade
+                                            <span class="block text-xs text-slate-400 font-normal mt-0.5">Includes demand charge savings</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right text-emerald-600 font-bold" id="tbl_roi_6c">0.00%</td>
+                                        <td class="py-3 px-4 text-right font-medium" id="tbl_payback_mo_6c">0.00 mo</td>
+                                        <td class="py-3 px-4 text-right text-slate-500" id="tbl_payback_yr_6c">0.00 yr</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="py-3 px-4 font-medium text-slate-800">
+                                            New Off-Grid System
+                                            <span class="block text-xs text-slate-400 font-normal mt-0.5">Includes demand charge savings</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right text-emerald-600 font-bold" id="tbl_roi_6d">0.00%</td>
+                                        <td class="py-3 px-4 text-right font-medium" id="tbl_payback_mo_6d">0.00 mo</td>
+                                        <td class="py-3 px-4 text-right text-slate-500" id="tbl_payback_yr_6d">0.00 yr</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Generate PDF Button -->
+        <div class="flex justify-end mt-2">
+            <button onclick="generatePDF()"
+                class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-blue-200 transition-all duration-150">
+                <i data-lucide="file-down" class="w-5 h-5"></i>
+                <span>Generate PDF Report</span>
+            </button>
+        </div>
+
+        <!-- Contact Footer -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+            <div class="bg-gradient-to-r from-green-600 to-green-500 px-5 py-4 flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                </svg>
+                <h2 class="text-base font-bold text-white tracking-wide">Contact Us on WhatsApp</h2>
+            </div>
+            <div class="p-5">
+                <p class="text-sm text-slate-500 mb-4">Tap any number below to reach your nearest regional representative directly on WhatsApp.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+                    <a href="https://wa.me/918788556562" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center space-x-3 bg-green-50 hover:bg-green-100 active:bg-green-200 border border-green-200 rounded-xl px-4 py-3 transition-colors duration-150 group">
+                        <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pune / Indore / Gwalior</p>
+                            <p class="text-sm font-bold text-green-700 group-hover:text-green-800">+91 87885 56562</p>
+                        </div>
+                    </a>
+
+                    <a href="https://wa.me/919302093090" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center space-x-3 bg-green-50 hover:bg-green-100 active:bg-green-200 border border-green-200 rounded-xl px-4 py-3 transition-colors duration-150 group">
+                        <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Vidarbha</p>
+                            <p class="text-sm font-bold text-green-700 group-hover:text-green-800">+91 93020 93090</p>
+                        </div>
+                    </a>
+
+                    <a href="https://wa.me/918007758899" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center space-x-3 bg-green-50 hover:bg-green-100 active:bg-green-200 border border-green-200 rounded-xl px-4 py-3 transition-colors duration-150 group">
+                        <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nanded / Latur / Kolhapur</p>
+                            <p class="text-sm font-bold text-green-700 group-hover:text-green-800">+91 80077 58899</p>
+                        </div>
+                    </a>
+
+                    <a href="https://wa.me/918282826038" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center space-x-3 bg-green-50 hover:bg-green-100 active:bg-green-200 border border-green-200 rounded-xl px-4 py-3 transition-colors duration-150 group">
+                        <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ch. Shambhaji Nagar</p>
+                            <p class="text-sm font-bold text-green-700 group-hover:text-green-800">+91 82828 26038</p>
+                        </div>
+                    </a>
+
+                    <a href="https://wa.me/918282827018" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center space-x-3 bg-green-50 hover:bg-green-100 active:bg-green-200 border border-green-200 rounded-xl px-4 py-3 transition-colors duration-150 group">
+                        <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jalgaon / Dhule</p>
+                            <p class="text-sm font-bold text-green-700 group-hover:text-green-800">+91 82828 27018</p>
+                        </div>
+                    </a>
+
+                    <a href="https://wa.me/917507501758" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center space-x-3 bg-green-50 hover:bg-green-100 active:bg-green-200 border border-green-200 rounded-xl px-4 py-3 transition-colors duration-150 group">
+                        <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bhopal / Jabalpur</p>
+                            <p class="text-sm font-bold text-green-700 group-hover:text-green-800">+91 75075 01758</p>
+                        </div>
+                    </a>
+
+                </div>
+
+                <!-- Bulk Enquiry - Full Width / Highlighted -->
+                <div class="mt-3">
+                    <a href="https://wa.me/919370639431" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center space-x-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 active:from-green-800 active:to-green-700 rounded-xl px-5 py-4 transition-all duration-150 shadow-sm shadow-green-200 group w-full">
+                        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.122 1.523 5.854L0 24l6.324-1.501A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.677-.5-5.218-1.377l-.374-.222-3.876.919.977-3.773-.243-.389A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold text-green-100 uppercase tracking-wider">Bulk Enquiry</p>
+                            <p class="text-base font-bold text-white">+91 93706 39431</p>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white/70 group-hover:text-white flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Utility formatters
+        const formatCurrency = (value) => {
+            if (!isFinite(value)) return '₹0';
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0,
+            }).format(value);
+        };
+
+        const formatDecimal = (value) => {
+            if (!isFinite(value)) return '0.00';
+            return Number(value).toFixed(2);
+        };
+
+        // State definition mapped to inputs
+        const inputs = [
+            'point1', 'point2', 'x', 'rate7a', 'gsc7b', 'point10'
+        ];
+
+        // Element caches
+        const domElements = {};
+
+        // Sync inputs and attach listeners
+        inputs.forEach(id => {
+            const numEl = document.getElementById(`num_${id}`);
+            const rangeEl = document.getElementById(`range_${id}`);
+            
+            domElements[id] = { num: numEl, range: rangeEl };
+
+            const updateValue = (val) => {
+                numEl.value = val;
+                rangeEl.value = val;
+                calculate();
+            };
+
+            numEl.addEventListener('input', (e) => updateValue(e.target.value));
+            rangeEl.addEventListener('input', (e) => updateValue(e.target.value));
+        });
+
+        // DOM Output Elements
+        const outputs = {
+            y: document.getElementById('out_y'),
+            x_percent: document.getElementById('out_x_percent'),
+            d: document.getElementById('out_d'),
+            p_percent: document.getElementById('out_p_percent'),
+            battery: document.getElementById('out_battery'),
+            cost6a: document.getElementById('out_cost6a'),
+            cost6b: document.getElementById('out_cost6b'),
+            cost6c: document.getElementById('out_cost6c'),
+            cost6d: document.getElementById('out_cost6d'),
+            savings7c: document.getElementById('out_savings7c'),
+            monthly_savings: document.getElementById('out_monthly_savings'),
+            total_savings: document.getElementById('out_total_savings'),
+            roi_6a: document.getElementById('tbl_roi_6a'),
+            pb_mo_6a: document.getElementById('tbl_payback_mo_6a'),
+            pb_yr_6a: document.getElementById('tbl_payback_yr_6a'),
+            roi_6b: document.getElementById('tbl_roi_6b'),
+            pb_mo_6b: document.getElementById('tbl_payback_mo_6b'),
+            pb_yr_6b: document.getElementById('tbl_payback_yr_6b'),
+            roi_6c: document.getElementById('tbl_roi_6c'),
+            pb_mo_6c: document.getElementById('tbl_payback_mo_6c'),
+            pb_yr_6c: document.getElementById('tbl_payback_yr_6c'),
+            roi_6d: document.getElementById('tbl_roi_6d'),
+            pb_mo_6d: document.getElementById('tbl_payback_mo_6d'),
+            pb_yr_6d: document.getElementById('tbl_payback_yr_6d'),
+            hybrid_mult: document.getElementById('out_hybrid_mult'),
+            offgrid_mult: document.getElementById('out_offgrid_mult'),
+        };
+
+        // Core Calculation Logic
+        function calculate() {
+            // Get current values
+            const point1 = parseFloat(domElements.point1.num.value) || 0;
+            const point2 = parseFloat(domElements.point2.num.value) || 0;
+            const x = parseFloat(domElements.x.num.value) || 0;
+            const rate7a = parseFloat(domElements.rate7a.num.value) || 0;
+            const gsc7b = parseFloat(domElements.gsc7b.num.value) || 0;
+            const point10 = parseFloat(domElements.point10.num.value) || 0;
+
+            // Advanced constants (editable, with safe defaults)
+            const C_ongrid      = parseFloat(document.getElementById('const_ongrid').value)      || 13000;
+            const C_battery     = parseFloat(document.getElementById('const_battery').value)     || 16000;
+            const C_hybrid_inv  = parseFloat(document.getElementById('const_hybrid_inv').value)  || 27000;
+            const C_offgrid     = parseFloat(document.getElementById('const_offgrid').value)     || 40000;
+            const M_hybrid      = parseFloat(document.getElementById('const_hybrid_mult').value) || 1.25;
+            const M_offgrid     = parseFloat(document.getElementById('const_offgrid_mult').value)|| 2;
+            const DAYS          = parseFloat(document.getElementById('const_days').value)        || 30;
+
+            // 3. & 4. Solar vs Non-Solar Consumption
+            const y = (x / 100) * point2;
+            const P = 100 - x;
+            const d = (P / 100) * point2;
+
+            // 5. Battery Bank
+            const battery = d * M_hybrid;
+
+            // 6. Investment Options
+            const cost6a = (C_ongrid * point1) + (C_battery * battery);
+            const cost6b = cost6a + (C_hybrid_inv * point1);
+            const cost6c = (C_ongrid * point1) + (C_battery * M_offgrid * d);
+            const cost6d = (C_offgrid * point1) + (C_battery * M_offgrid * d);
+
+            // 7. Tariff & Savings
+            const savingsPerUnit7c = rate7a - gsc7b;
+            const monthlySavings = point2 * DAYS * point1 * savingsPerUnit7c;
+            const monthlyDemandSavings = point10 * point1;
+            const totalMonthlySavingsOffGrid = monthlySavings + monthlyDemandSavings;
+
+            // 8 & 9. Hybrid ROI & Payback
+            const roi6a = cost6a > 0 ? ((12 * monthlySavings) / cost6a) * 100 : 0;
+            const roi6b = cost6b > 0 ? ((12 * monthlySavings) / cost6b) * 100 : 0;
+            
+            const paybackMo6a = monthlySavings > 0 ? cost6a / monthlySavings : 0;
+            const paybackMo6b = monthlySavings > 0 ? cost6b / monthlySavings : 0;
+
+            // 11 & 12. Off-Grid ROI & Payback
+            const roi6c = cost6c > 0 ? ((12 * totalMonthlySavingsOffGrid) / cost6c) * 100 : 0;
+            const paybackMo6c = totalMonthlySavingsOffGrid > 0 ? cost6c / totalMonthlySavingsOffGrid : 0;
+
+            const roi6d = cost6d > 0 ? ((12 * totalMonthlySavingsOffGrid) / cost6d) * 100 : 0;
+            const paybackMo6d = totalMonthlySavingsOffGrid > 0 ? cost6d / totalMonthlySavingsOffGrid : 0;
+
+            // Update DOM
+            outputs.y.innerText = formatDecimal(y);
+            outputs.x_percent.innerText = formatDecimal(x);
+            outputs.d.innerText = formatDecimal(d);
+            outputs.p_percent.innerText = formatDecimal(P);
+            outputs.battery.innerText = formatDecimal(battery);
+            
+            outputs.cost6a.innerText = formatCurrency(cost6a);
+            outputs.cost6b.innerText = formatCurrency(cost6b);
+            outputs.cost6c.innerText = formatCurrency(cost6c);
+            outputs.cost6d.innerText = formatCurrency(cost6d);
+
+            outputs.savings7c.innerText = formatCurrency(savingsPerUnit7c);
+            outputs.monthly_savings.innerText = formatCurrency(monthlySavings);
+            outputs.total_savings.innerText = formatCurrency(totalMonthlySavingsOffGrid);
+
+            outputs.hybrid_mult.innerText = M_hybrid;
+            outputs.offgrid_mult.innerText = M_offgrid;
+
+            outputs.roi_6a.innerText = `${formatDecimal(roi6a)}%`;
+            outputs.pb_mo_6a.innerText = `${formatDecimal(paybackMo6a)} mo`;
+            outputs.pb_yr_6a.innerText = `${formatDecimal(paybackMo6a / 12)} yr`;
+
+            outputs.roi_6b.innerText = `${formatDecimal(roi6b)}%`;
+            outputs.pb_mo_6b.innerText = `${formatDecimal(paybackMo6b)} mo`;
+            outputs.pb_yr_6b.innerText = `${formatDecimal(paybackMo6b / 12)} yr`;
+
+            outputs.roi_6c.innerText = `${formatDecimal(roi6c)}%`;
+            outputs.pb_mo_6c.innerText = `${formatDecimal(paybackMo6c)} mo`;
+            outputs.pb_yr_6c.innerText = `${formatDecimal(paybackMo6c / 12)} yr`;
+
+            outputs.roi_6d.innerText = `${formatDecimal(roi6d)}%`;
+            outputs.pb_mo_6d.innerText = `${formatDecimal(paybackMo6d)} mo`;
+            outputs.pb_yr_6d.innerText = `${formatDecimal(paybackMo6d / 12)} yr`;
+        }
+
+        // Toggle Advanced Constants panel
+        function toggleAdvanced() {
+            const panel = document.getElementById('adv-panel');
+            const chevron = document.getElementById('adv-chevron');
+            const hint = document.getElementById('adv-hint');
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden');
+            chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+            hint.textContent = isHidden ? 'click to collapse' : 'click to expand';
+        }
+
+        // Reset constants to original defaults
+        function resetConstants() {
+            document.getElementById('const_ongrid').value     = 13000;
+            document.getElementById('const_battery').value    = 16000;
+            document.getElementById('const_hybrid_inv').value = 27000;
+            document.getElementById('const_offgrid').value    = 40000;
+            document.getElementById('const_hybrid_mult').value= 1.25;
+            document.getElementById('const_offgrid_mult').value= 2;
+            document.getElementById('const_days').value       = 30;
+            calculate();
+        }
+
+        // ══════════════════════════════════════════════
+        //  WATERMARK — repeating diagonal logo tiles
+        // ══════════════════════════════════════════════
+        function drawWatermark() {
+            const canvas = document.getElementById('watermark-canvas');
+            const dpr    = window.devicePixelRatio || 1;
+            const W      = window.innerWidth;
+            const H      = window.innerHeight;
+
+            canvas.width  = W * dpr;
+            canvas.height = H * dpr;
+            canvas.style.width  = W + 'px';
+            canvas.style.height = H + 'px';
+
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, W, H);
+
+            const img = new Image();
+            img.src = 'assets/images/jkpower_logo.png';
+
+            const drawTiles = () => {
+                const TILE_W   = 280;
+                const TILE_H   = 80;
+                const GAP_X    = 60;
+                const GAP_Y    = 60;
+                const ANGLE    = -25 * Math.PI / 180;
+                const ALPHA    = 0.07;
+
+                ctx.save();
+                ctx.globalAlpha = ALPHA;
+                ctx.translate(W / 2, H / 2);
+                ctx.rotate(ANGLE);
+
+                const cols = Math.ceil((W * 1.8) / (TILE_W + GAP_X)) + 2;
+                const rows = Math.ceil((H * 1.8) / (TILE_H + GAP_Y)) + 2;
+                const startX = -cols / 2 * (TILE_W + GAP_X);
+                const startY = -rows / 2 * (TILE_H + GAP_Y);
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const tx = startX + c * (TILE_W + GAP_X);
+                        const ty = startY + r * (TILE_H + GAP_Y);
+                        ctx.drawImage(img, tx, ty, TILE_W, TILE_H);
+                    }
+                }
+                ctx.restore();
+            };
+
+            if (img.complete && img.naturalWidth > 0) {
+                drawTiles();
+            } else {
+                img.onload  = drawTiles;
+                img.onerror = () => {
+                    // Fallback: text watermark
+                    const ALPHA_T = 0.06;
+                    const ANGLE   = -25 * Math.PI / 180;
+                    ctx.save();
+                    ctx.globalAlpha = ALPHA_T;
+                    ctx.translate(W / 2, H / 2);
+                    ctx.rotate(ANGLE);
+                    ctx.font = 'bold 22px Inter, sans-serif';
+                    ctx.fillStyle = '#1e40af';
+                    const text   = 'JK POWER SOLUTIONS';
+                    const tw     = ctx.measureText(text).width;
+                    const cols   = Math.ceil(W * 1.8 / (tw + 60)) + 2;
+                    const rows   = Math.ceil(H * 1.8 / 70) + 2;
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            ctx.fillText(text, -cols/2*(tw+60) + c*(tw+60), -rows/2*70 + r*70);
+                        }
+                    }
+                    ctx.restore();
+                };
+            }
+        }
+
+        drawWatermark();
+        window.addEventListener('resize', drawWatermark);
+
+
+        // ══════════════════════════════════════════════
+        //  PDF REPORT GENERATOR (FIXED)
+        // ══════════════════════════════════════════════
+        async function generatePDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+                const PW = 210, PH = 297;
+                const ML = 14, MR = 14, MT = 14;
+                let y = MT;
+
+                // ── helpers ──────────────────────────────
+                const fmtCur = (v) => {
+                    if (!isFinite(v)) return '₹0';
+                    return '₹' + Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+                };
+                const fmtDec = (v) => (!isFinite(v) ? '0.00' : Number(v).toFixed(2));
+
+                // ── gather live values ────────────────────
+                const point1   = parseFloat(document.getElementById('num_point1').value)  || 0;
+                const point2   = parseFloat(document.getElementById('num_point2').value)  || 0;
+                const x        = parseFloat(document.getElementById('num_x').value)       || 0;
+                const rate7a   = parseFloat(document.getElementById('num_rate7a').value)  || 0;
+                const gsc7b    = parseFloat(document.getElementById('num_gsc7b').value)   || 0;
+                const point10  = parseFloat(document.getElementById('num_point10').value) || 0;
+                const C_ong    = parseFloat(document.getElementById('const_ongrid').value)       || 13000;
+                const C_bat    = parseFloat(document.getElementById('const_battery').value)      || 16000;
+                const C_hinv   = parseFloat(document.getElementById('const_hybrid_inv').value)   || 27000;
+                const C_ofg    = parseFloat(document.getElementById('const_offgrid').value)      || 40000;
+                const M_h      = parseFloat(document.getElementById('const_hybrid_mult').value)  || 1.25;
+                const M_o      = parseFloat(document.getElementById('const_offgrid_mult').value) || 2;
+                const DAYS     = parseFloat(document.getElementById('const_days').value)         || 30;
+
+                const P   = 100 - x;
+                const yv  = (x / 100) * point2;
+                const d   = (P / 100) * point2;
+                const bat = d * M_h;
+
+                const c6a = (C_ong * point1) + (C_bat * bat);
+                const c6b = c6a + (C_hinv * point1);
+                const c6c = (C_ong * point1) + (C_bat * M_o * d);
+                const c6d = (C_ofg * point1) + (C_bat * M_o * d);
+
+                const savPU     = rate7a - gsc7b;
+                const monSav    = point2 * DAYS * point1 * savPU;
+                const demSav    = point10 * point1;
+                const totSav    = monSav + demSav;
+
+                const roi6a = c6a > 0 ? ((12 * monSav) / c6a) * 100 : 0;
+                const roi6b = c6b > 0 ? ((12 * monSav) / c6b) * 100 : 0;
+                const roi6c = c6c > 0 ? ((12 * totSav)  / c6c) * 100 : 0;
+                const roi6d = c6d > 0 ? ((12 * totSav)  / c6d) * 100 : 0;
+                const pb6a  = monSav > 0 ? c6a / monSav : 0;
+                const pb6b  = monSav > 0 ? c6b / monSav : 0;
+                const pb6c  = totSav > 0 ? c6c / totSav : 0;
+                const pb6d  = totSav > 0 ? c6d / totSav : 0;
+
+                // ── watermark tiles ──────────────────────
+                const addWatermark = () => {
+                    return new Promise(resolve => {
+                        const img = new Image();
+                        img.crossOrigin = "Anonymous";
+                        img.src = 'assets/images/jkpower_logo.png';
+                        
+                        const drawWM = () => {
+                            let logoData;
+                            try {
+                                const wCanvas = document.createElement('canvas');
+                                wCanvas.width  = 600;
+                                wCanvas.height = 200;
+                                const wCtx = wCanvas.getContext('2d');
+                                if (img.complete && img.naturalWidth > 0) {
+                                    wCtx.drawImage(img, 0, 0, 600, 200);
+                                } else {
+                                    throw new Error("No image");
+                                }
+                                logoData = wCanvas.toDataURL('image/png');
+                            } catch (err) {
+                                // Fallback if canvas is tainted by local file protocol
+                                const fCanvas = document.createElement('canvas');
+                                fCanvas.width = 600;
+                                fCanvas.height = 200;
+                                const fCtx = fCanvas.getContext('2d');
+                                fCtx.font = 'bold 32px sans-serif';
+                                fCtx.fillStyle = '#1e3a8a';
+                                fCtx.fillText('JK POWERGUARD', 10, 120);
+                                logoData = fCanvas.toDataURL('image/png');
+                            }
+
+                            try {
+                                doc.saveGraphicsState();
+                                doc.setGState(new doc.GState({ opacity: 0.07 }));
+
+                                const tW = 60, tH = 20, gX = 16, gY = 18;
+                                const angle = -25;
+                                const cx = PW / 2, cy = PH / 2;
+                                const rad = angle * Math.PI / 180;
+                                const wmCols = Math.ceil(PW * 1.8 / (tW + gX)) + 2;
+                                const wmRows = Math.ceil(PH * 1.8 / (tH + gY)) + 2;
+
+                                for (let r = 0; r < wmRows; r++) {
+                                    for (let c = 0; c < wmCols; c++) {
+                                        const bx = cx - (wmCols / 2) * (tW + gX) + c * (tW + gX);
+                                        const by = cy - (wmRows / 2) * (tH + gY) + r * (tH + gY);
+                                        const rx = cx + (bx - cx) * Math.cos(rad) - (by - cy) * Math.sin(rad);
+                                        const ry = cy + (bx - cx) * Math.sin(rad) + (by - cy) * Math.cos(rad);
+                                        doc.addImage(logoData, 'PNG', rx - tW / 2, ry - tH / 2, tW, tH);
+                                    }
+                                }
+                                doc.restoreGraphicsState();
+                            } catch(e) {
+                                console.warn("Watermark skipped due to an error:", e);
+                            }
+                            resolve();
+                        };
+                        
+                        if (img.complete) drawWM();
+                        else { img.onload = drawWM; img.onerror = drawWM; }
+                    });
+                };
+
+                await addWatermark();
+
+                // ── logo header ──────────────────────────
+                const logoImg = new Image();
+                logoImg.crossOrigin = "Anonymous";
+                logoImg.src = 'assets/images/jkpower_logo.png';
+                await new Promise(res => {
+                    const done = () => res();
+                    if (logoImg.complete) done();
+                    else { logoImg.onload = done; logoImg.onerror = done; }
+                });
+                
+                try {
+                    if (logoImg.naturalWidth > 0) {
+                        const lCanvas = document.createElement('canvas');
+                        lCanvas.width  = 800; lCanvas.height = 200;
+                        const lCtx = lCanvas.getContext('2d');
+                        lCtx.drawImage(logoImg, 0, 0, 800, 200);
+                        doc.addImage(lCanvas.toDataURL('image/png'), 'PNG', ML, y, 100, 25);
+                        y += 28;
+                    } else {
+                        throw new Error("No image available");
+                    }
+                } catch(err) {
+                    // Fallback to text header if image loading or canvas export fails
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(22);
+                    doc.setTextColor(30, 58, 138); 
+                    doc.text('JK POWERGUARD', ML, y + 10);
+                    y += 20;
+                }
+
+                // ── report title ─────────────────────────
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(15);
+                doc.setTextColor(15, 23, 42);
+                doc.text('Solar System — Investment & ROI Report', ML, y);
+                y += 6;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(100, 116, 139);
+                doc.text(`Generated: ${dateStr}`, ML, y);
+                y += 8;
+
+                // ── divider ──────────────────────────────
+                doc.setDrawColor(203, 213, 225);
+                doc.setLineWidth(0.3);
+                doc.line(ML, y, PW - MR, y);
+                y += 6;
+
+                // ── section helper ───────────────────────
+                const sectionTitle = (title, color) => {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9);
+                    doc.setTextColor(...color);
+                    doc.text(title, ML, y);
+                    y += 5;
+                };
+
+                const infoRow = (label, value, labelColor=[51,65,85], valueColor=[15,23,42]) => {
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(...labelColor);
+                    doc.text(label, ML + 2, y);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(...valueColor);
+                    doc.text(String(value), ML + 80, y);
+                    y += 5.5;
+                };
+
+                // ── 2-column layout setup ────────────────
+                const COL1_X = ML;
+                const COL2_X = ML + 94;
+                const COL_W  = 88;
+
+                // save y for column sync
+                let col1Y = y;
+
+                // === COLUMN 1 ===
+                y = col1Y;
+                sectionTitle('▸  System Parameters', [37, 99, 235]);
+                infoRow('Solar Capacity',           `${point1} kW`);
+                infoRow('Daily Generation (per kW)', `${point2} kWh`);
+                infoRow('Solar Hour Consumption',    `${x}%`);
+                infoRow('Non-Solar Consumption',     `${fmtDec(P)}%`);
+                y += 2;
+                sectionTitle('▸  Tariff Rates', [37, 99, 235]);
+                infoRow('Average Unit Rate',   `₹${rate7a}/unit`);
+                infoRow('Grid Support Charge', `₹${gsc7b}/unit`);
+                infoRow('Demand Charge',       `₹${point10}/kW/mo`);
+                y += 2;
+                sectionTitle('▸  System Sizing', [37, 99, 235]);
+                infoRow('Solar Consumption',        `${fmtDec(yv)} kWh`);
+                infoRow('Non-Solar Consumption',    `${fmtDec(d)} kWh`);
+                infoRow('Battery Bank (Hybrid)',    `${fmtDec(bat)} kWh`);
+                infoRow('Battery Bank (Off-Grid)',  `${fmtDec(d * M_o)} kWh`);
+
+                let col1End = y;
+
+                // === COLUMN 2 ===
+                y = col1Y;
+                // helper for column 2
+                const infoRow2 = (label, value, labelColor=[51,65,85], valueColor=[15,23,42]) => {
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(...labelColor);
+                    doc.text(label, COL2_X + 2, y);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(...valueColor);
+                    doc.text(String(value), COL2_X + 54, y, { align: 'right' });
+                    y += 5.5;
+                };
+                const sectionTitle2 = (title, color) => {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9);
+                    doc.setTextColor(...color);
+                    doc.text(title, COL2_X, y);
+                    y += 5;
+                };
+
+                sectionTitle2('▸  Investment Costs', [16, 185, 129]);
+                infoRow2('Hybrid Upgrade',        fmtCur(c6a), [51,65,85], [29,78,216]);
+                infoRow2('New Hybrid System',      fmtCur(c6b), [51,65,85], [29,78,216]);
+                infoRow2('Off-Grid Upgrade',       fmtCur(c6c), [51,65,85], [5,150,105]);
+                infoRow2('New Off-Grid System',    fmtCur(c6d), [51,65,85], [5,150,105]);
+                y += 2;
+                sectionTitle2('▸  Savings Summary', [16, 185, 129]);
+                infoRow2('Savings per Unit',         fmtCur(savPU));
+                infoRow2('Standard Monthly Savings', fmtCur(monSav));
+                infoRow2('Off-Grid Monthly Savings', fmtCur(totSav));
+
+                let col2End = y;
+                y = Math.max(col1End, col2End) + 4;
+
+                // ── divider ──────────────────────────────
+                doc.setDrawColor(203, 213, 225);
+                doc.line(ML, y, PW - MR, y);
+                y += 6;
+
+                // ── ROI Table ────────────────────────────
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9.5);
+                doc.setTextColor(15, 23, 42);
+                doc.text('ROI & Payback Summary', ML, y);
+                y += 6;
+
+                const tableHeaders = ['System Option', 'Investment', 'ROI (% p.a.)', 'Payback (Mo)', 'Payback (Yr)'];
+                const tableData = [
+                    ['Hybrid Upgrade',        fmtCur(c6a), `${fmtDec(roi6a)}%`, `${fmtDec(pb6a)} mo`, `${fmtDec(pb6a/12)} yr`],
+                    ['New Hybrid System',     fmtCur(c6b), `${fmtDec(roi6b)}%`, `${fmtDec(pb6b)} mo`, `${fmtDec(pb6b/12)} yr`],
+                    ['Off-Grid Upgrade',      fmtCur(c6c), `${fmtDec(roi6c)}%`, `${fmtDec(pb6c)} mo`, `${fmtDec(pb6c/12)} yr`],
+                    ['New Off-Grid System',   fmtCur(c6d), `${fmtDec(roi6d)}%`, `${fmtDec(pb6d)} mo`, `${fmtDec(pb6d/12)} yr`],
+                ];
+
+                const colXs     = [ML, ML+52, ML+100, ML+132, ML+162];
+                const colAligns = ['left','right','right','right','right'];
+                const ROW_H     = 7.5;
+                const TBL_W     = PW - ML - MR;
+
+                // Header row
+                doc.setFillColor(37, 99, 235);
+                doc.roundedRect(ML, y, TBL_W, ROW_H, 2, 2, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8);
+                doc.setTextColor(255, 255, 255);
+                tableHeaders.forEach((h, i) => {
+                    const xPos = colAligns[i] === 'right' ? colXs[i] + (i < 4 ? colXs[i+1] - colXs[i] - 2 : TBL_W - colXs[i] + ML - 2) : colXs[i] + 2;
+                    doc.text(h, xPos, y + 5, { align: colAligns[i] });
+                });
+                y += ROW_H;
+
+                // Data rows
+                const rowColors = [[241,245,249],[255,255,255]];
+                tableData.forEach((row, ri) => {
+                    const isBlue  = ri < 2;
+                    const bgColor = ri % 2 === 0 ? rowColors[0] : rowColors[1];
+                    doc.setFillColor(...bgColor);
+                    doc.rect(ML, y, TBL_W, ROW_H, 'F');
+
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(8);
+
+                    row.forEach((cell, i) => {
+                        const roiColor = isBlue ? [29,78,216] : [5,150,105];
+                        if (i === 0) {
+                            doc.setFont('helvetica', 'bold');
+                            doc.setTextColor(15, 23, 42);
+                            doc.text(cell, colXs[i] + 2, y + 5);
+                        } else if (i === 2) {
+                            doc.setFont('helvetica', 'bold');
+                            doc.setTextColor(...roiColor);
+                            const xPos = colXs[i] + (colXs[i+1] - colXs[i] - 2);
+                            doc.text(cell, xPos, y + 5, { align: 'right' });
+                        } else {
+                            doc.setFont('helvetica', 'normal');
+                            doc.setTextColor(51, 65, 85);
+                            const nextX = i < 4 ? colXs[i+1] : ML + TBL_W;
+                            doc.text(cell, nextX - 2, y + 5, { align: 'right' });
+                        }
+                    });
+
+                    // row border
+                    doc.setDrawColor(226, 232, 240);
+                    doc.setLineWidth(0.2);
+                    doc.line(ML, y + ROW_H, ML + TBL_W, y + ROW_H);
+                    y += ROW_H;
+                });
+
+                y += 8;
+                // ── footer ───────────────────────────────
+                doc.setDrawColor(203, 213, 225);
+                doc.line(ML, y, PW - MR, y);
+                y += 5;
+                doc.setFont('helvetica', 'italic');
+                doc.setFontSize(7);
+                doc.setTextColor(148, 163, 184);
+                doc.text('This report is generated by the JK Powerguard Solar Calculator. Values are indicative and subject to site assessment.', ML, y);
+                y += 4;
+                doc.text('© JK Powerguard — Confidential', ML, y);
+
+                // ── save ─────────────────────────────────
+                const fileName = `JKPower_Solar_Report_${point1}kW_${dateStr.replace(/ /g,'_')}.pdf`;
+                doc.save(fileName);
+
+            } catch (error) {
+                console.error("PDF Generation Failed:", error);
+                alert("Failed to generate PDF. If testing locally, ensure you are running a local server or that the image isn't being blocked by the browser.");
+            }
+        }
+
+        // Initial Calculation on Load
+        calculate();
+
+    </script>
+</body>
+</html>
