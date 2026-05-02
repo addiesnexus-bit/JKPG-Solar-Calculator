@@ -112,11 +112,11 @@
                                     <label class="block text-sm font-semibold text-slate-700">Solar Capacity</label>
                                 </div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
-                                    <input type="number" id="num_point1" min="0.5" max="100" step="0.5" value="1" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="number" id="num_point1" min="0" max="999" step="0.001" value="20" class="w-16 text-right font-medium text-slate-800 outline-none">
                                     <span class="ml-1 text-sm font-medium text-slate-500">kW</span>
                                 </div>
                             </div>
-                            <input type="range" id="range_point1" min="0.5" max="100" step="0.5" value="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            <input type="range" id="range_point1" min="0" max="999" step="0.001" value="20" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                         </div>
 
                         <!-- Input Group: Daily Generation -->
@@ -127,11 +127,11 @@
                                     <p class="text-xs text-slate-500 mt-0.5">(Per kW per day)</p>
                                 </div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
-                                    <input type="number" id="num_point2" min="3" max="6" step="0.1" value="4" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="number" id="num_point2" min="3" max="6" step="0.001" value="4.5" class="w-16 text-right font-medium text-slate-800 outline-none">
                                     <span class="ml-1 text-sm font-medium text-slate-500">kWh</span>
                                 </div>
                             </div>
-                            <input type="range" id="range_point2" min="3" max="6" step="0.1" value="4" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            <input type="range" id="range_point2" min="3" max="6" step="0.001" value="4.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                         </div>
 
                         <!-- Input Group: Solar Hour Consumption -->
@@ -142,11 +142,11 @@
                                     <p class="text-xs text-slate-500 mt-0.5">(9 AM - 5 PM)</p>
                                 </div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
-                                    <input type="number" id="num_x" min="0" max="100" step="1" value="50" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="number" id="num_x" min="0" max="100" step="0.001" value="80" class="w-16 text-right font-medium text-slate-800 outline-none">
                                     <span class="ml-1 text-sm font-medium text-slate-500">%</span>
                                 </div>
                             </div>
-                            <input type="range" id="range_x" min="0" max="100" step="1" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            <input type="range" id="range_x" min="0" max="100" step="0.001" value="80" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                         </div>
 
                     </div>
@@ -627,8 +627,8 @@
         };
 
         const formatDecimal = (value) => {
-            if (!isFinite(value)) return '0.00';
-            return Number(value).toFixed(2);
+            if (!isFinite(value)) return '0.000';
+            return Number(value).toFixed(3);
         };
 
         // State definition mapped to inputs
@@ -705,12 +705,12 @@
             const M_offgrid     = parseFloat(document.getElementById('const_offgrid_mult').value)|| 2;
             const DAYS          = parseFloat(document.getElementById('const_days').value)        || 30;
 
-            // 3. & 4. Solar vs Non-Solar Consumption
-            const y = (x / 100) * point2;
+            // 3. & 4. Solar vs Non-Solar Consumption (total kWh/day, scaled by capacity)
+            const yv = (x / 100) * point2 * point1;
             const P = 100 - x;
-            const d = (P / 100) * point2;
+            const d = (P / 100) * point2 * point1;
 
-            // 5. Battery Bank
+            // 5. Battery Bank (based on total non-solar daily kWh)
             const battery = d * M_hybrid;
 
             // 6. Investment Options
@@ -740,7 +740,7 @@
             const paybackMo6d = totalMonthlySavingsOffGrid > 0 ? cost6d / totalMonthlySavingsOffGrid : 0;
 
             // Update DOM
-            outputs.y.innerText = formatDecimal(y);
+            outputs.y.innerText = formatDecimal(yv);
             outputs.x_percent.innerText = formatDecimal(x);
             outputs.d.innerText = formatDecimal(d);
             outputs.p_percent.innerText = formatDecimal(P);
@@ -880,7 +880,7 @@
 
 
         // ══════════════════════════════════════════════
-        //  PDF REPORT GENERATOR (FIXED)
+        //  PDF REPORT GENERATOR (REDESIGNED)
         // ══════════════════════════════════════════════
         async function generatePDF() {
             try {
@@ -888,34 +888,33 @@
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
                 const PW = 210, PH = 297;
-                const ML = 14, MR = 14, MT = 14;
-                let y = MT;
+                const ML = 14, MR = 14;
+                const BW = PW - ML - MR; // 182mm usable width
+                let y = 0;
 
-                // ── helpers ──────────────────────────────
-                const fmtCur = (v) => {
-                    if (!isFinite(v)) return '₹0';
-                    return '₹' + Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 });
-                };
-                const fmtDec = (v) => (!isFinite(v) ? '0.00' : Number(v).toFixed(2));
+                // ── helpers (use Rs. — jsPDF helvetica doesn't render ₹) ──
+                const Rs = (v) => !isFinite(v) ? 'Rs.0'
+                    : 'Rs.' + Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+                const fmtDec = (v) => (!isFinite(v) ? '0.000' : Number(v).toFixed(3));
 
                 // ── gather live values ────────────────────
-                const point1   = parseFloat(document.getElementById('num_point1').value)  || 0;
-                const point2   = parseFloat(document.getElementById('num_point2').value)  || 0;
-                const x        = parseFloat(document.getElementById('num_x').value)       || 0;
-                const rate7a   = parseFloat(document.getElementById('num_rate7a').value)  || 0;
-                const gsc7b    = parseFloat(document.getElementById('num_gsc7b').value)   || 0;
-                const point10  = parseFloat(document.getElementById('num_point10').value) || 0;
-                const C_ong    = parseFloat(document.getElementById('const_ongrid').value)       || 13000;
-                const C_bat    = parseFloat(document.getElementById('const_battery').value)      || 16000;
-                const C_hinv   = parseFloat(document.getElementById('const_hybrid_inv').value)   || 27000;
-                const C_ofg    = parseFloat(document.getElementById('const_offgrid').value)      || 40000;
-                const M_h      = parseFloat(document.getElementById('const_hybrid_mult').value)  || 1.25;
-                const M_o      = parseFloat(document.getElementById('const_offgrid_mult').value) || 2;
-                const DAYS     = parseFloat(document.getElementById('const_days').value)         || 30;
+                const point1  = parseFloat(document.getElementById('num_point1').value)  || 0;
+                const point2  = parseFloat(document.getElementById('num_point2').value)  || 0;
+                const x       = parseFloat(document.getElementById('num_x').value)       || 0;
+                const rate7a  = parseFloat(document.getElementById('num_rate7a').value)  || 0;
+                const gsc7b   = parseFloat(document.getElementById('num_gsc7b').value)   || 0;
+                const point10 = parseFloat(document.getElementById('num_point10').value) || 0;
+                const C_ong   = parseFloat(document.getElementById('const_ongrid').value)       || 13000;
+                const C_bat   = parseFloat(document.getElementById('const_battery').value)      || 16000;
+                const C_hinv  = parseFloat(document.getElementById('const_hybrid_inv').value)   || 27000;
+                const C_ofg   = parseFloat(document.getElementById('const_offgrid').value)      || 40000;
+                const M_h     = parseFloat(document.getElementById('const_hybrid_mult').value)  || 1.25;
+                const M_o     = parseFloat(document.getElementById('const_offgrid_mult').value) || 2;
+                const DAYS    = parseFloat(document.getElementById('const_days').value)         || 30;
 
                 const P   = 100 - x;
-                const yv  = (x / 100) * point2;
-                const d   = (P / 100) * point2;
+                const yv  = (x / 100) * point2 * point1;
+                const d   = (P / 100) * point2 * point1;
                 const bat = d * M_h;
 
                 const c6a = (C_ong * point1) + (C_bat * bat);
@@ -923,10 +922,10 @@
                 const c6c = (C_ong * point1) + (C_bat * M_o * d);
                 const c6d = (C_ofg * point1) + (C_bat * M_o * d);
 
-                const savPU     = rate7a - gsc7b;
-                const monSav    = point2 * DAYS * point1 * savPU;
-                const demSav    = point10 * point1;
-                const totSav    = monSav + demSav;
+                const savPU  = rate7a - gsc7b;
+                const monSav = point2 * DAYS * point1 * savPU;
+                const demSav = point10 * point1;
+                const totSav = monSav + demSav;
 
                 const roi6a = c6a > 0 ? ((12 * monSav) / c6a) * 100 : 0;
                 const roi6b = c6b > 0 ? ((12 * monSav) / c6b) * 100 : 0;
@@ -937,301 +936,494 @@
                 const pb6c  = totSav > 0 ? c6c / totSav : 0;
                 const pb6d  = totSav > 0 ? c6d / totSav : 0;
 
-                // ── watermark tiles ──────────────────────
-                const addWatermark = () => {
-                    return new Promise(resolve => {
-                        const img = new Image();
-                        img.crossOrigin = "Anonymous";
-                        img.src = 'assets/images/jkpower_logo.png';
-                        
-                        const drawWM = () => {
-                            let logoData;
-                            try {
-                                const wCanvas = document.createElement('canvas');
-                                wCanvas.width  = 600;
-                                wCanvas.height = 200;
-                                const wCtx = wCanvas.getContext('2d');
-                                if (img.complete && img.naturalWidth > 0) {
-                                    wCtx.drawImage(img, 0, 0, 600, 200);
-                                } else {
-                                    throw new Error("No image");
-                                }
-                                logoData = wCanvas.toDataURL('image/png');
-                            } catch (err) {
-                                // Fallback if canvas is tainted by local file protocol
-                                const fCanvas = document.createElement('canvas');
-                                fCanvas.width = 600;
-                                fCanvas.height = 200;
-                                const fCtx = fCanvas.getContext('2d');
-                                fCtx.font = 'bold 32px sans-serif';
-                                fCtx.fillStyle = '#1e3a8a';
-                                fCtx.fillText('JK POWERGUARD', 10, 120);
-                                logoData = fCanvas.toDataURL('image/png');
-                            }
-
-                            try {
-                                doc.saveGraphicsState();
-                                doc.setGState(new doc.GState({ opacity: 0.07 }));
-
-                                const tW = 60, tH = 20, gX = 16, gY = 18;
-                                const angle = -25;
-                                const cx = PW / 2, cy = PH / 2;
-                                const rad = angle * Math.PI / 180;
-                                const wmCols = Math.ceil(PW * 1.8 / (tW + gX)) + 2;
-                                const wmRows = Math.ceil(PH * 1.8 / (tH + gY)) + 2;
-
-                                for (let r = 0; r < wmRows; r++) {
-                                    for (let c = 0; c < wmCols; c++) {
-                                        const bx = cx - (wmCols / 2) * (tW + gX) + c * (tW + gX);
-                                        const by = cy - (wmRows / 2) * (tH + gY) + r * (tH + gY);
-                                        const rx = cx + (bx - cx) * Math.cos(rad) - (by - cy) * Math.sin(rad);
-                                        const ry = cy + (bx - cx) * Math.sin(rad) + (by - cy) * Math.cos(rad);
-                                        doc.addImage(logoData, 'PNG', rx - tW / 2, ry - tH / 2, tW, tH);
-                                    }
-                                }
-                                doc.restoreGraphicsState();
-                            } catch(e) {
-                                console.warn("Watermark skipped due to an error:", e);
-                            }
-                            resolve();
-                        };
-                        
-                        if (img.complete) drawWM();
-                        else { img.onload = drawWM; img.onerror = drawWM; }
-                    });
-                };
-
-                await addWatermark();
-
-                // ── logo header ──────────────────────────
-                const logoImg = new Image();
-                logoImg.crossOrigin = "Anonymous";
-                logoImg.src = 'assets/images/jkpower_logo.png';
-                await new Promise(res => {
-                    const done = () => res();
-                    if (logoImg.complete) done();
-                    else { logoImg.onload = done; logoImg.onerror = done; }
-                });
-                
-                try {
-                    if (logoImg.naturalWidth > 0) {
-                        const lCanvas = document.createElement('canvas');
-                        lCanvas.width  = 800; lCanvas.height = 200;
-                        const lCtx = lCanvas.getContext('2d');
-                        lCtx.drawImage(logoImg, 0, 0, 800, 200);
-                        doc.addImage(lCanvas.toDataURL('image/png'), 'PNG', ML, y, 100, 25);
-                        y += 28;
-                    } else {
-                        throw new Error("No image available");
-                    }
-                } catch(err) {
-                    // Fallback to text header if image loading or canvas export fails
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(22);
-                    doc.setTextColor(30, 58, 138); 
-                    doc.text('JK POWERGUARD', ML, y + 10);
-                    y += 20;
-                }
-
-                // ── report title ─────────────────────────
-                const now = new Date();
+                const now     = new Date();
                 const dateStr = now.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
 
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(15);
-                doc.setTextColor(15, 23, 42);
-                doc.text('Solar System — Investment & ROI Report', ML, y);
-                y += 6;
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8);
-                doc.setTextColor(100, 116, 139);
-                doc.text(`Generated: ${dateStr}`, ML, y);
-                y += 8;
+                // ══════════════════════════════════════════
+                //  WATERMARK — logo tiles using pre-captured
+                //  base64 (set at page load, no canvas taint)
+                // ══════════════════════════════════════════
+                try {
+                    let wmData = _pdfLogoBase64;
 
-                // ── divider ──────────────────────────────
+                    // Fallback: crisp text tile if logo wasn't captured
+                    if (!wmData) {
+                        const wc = document.createElement('canvas');
+                        wc.width = 560; wc.height = 140;
+                        const wctx = wc.getContext('2d');
+                        wctx.font = 'bold 30px sans-serif';
+                        wctx.fillStyle = '#1e3a8a';
+                        wctx.fillText('JK POWERGUARD', 8, 90);
+                        wmData = wc.toDataURL('image/png');
+                    }
+
+                    doc.saveGraphicsState();
+                    doc.setGState(new doc.GState({ opacity: 0.06 }));
+                    const tW = 55, tH = 16, gX = 18, gY = 18;
+                    const ang = -25 * Math.PI / 180;
+                    const cx = PW / 2, cy = PH / 2;
+                    const cols = Math.ceil(PW * 2 / (tW + gX)) + 3;
+                    const rows = Math.ceil(PH * 2 / (tH + gY)) + 3;
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            const bx = cx - (cols/2)*(tW+gX) + c*(tW+gX);
+                            const by = cy - (rows/2)*(tH+gY) + r*(tH+gY);
+                            const rx = cx + (bx-cx)*Math.cos(ang) - (by-cy)*Math.sin(ang);
+                            const ry = cy + (bx-cx)*Math.sin(ang) + (by-cy)*Math.cos(ang);
+                            doc.addImage(wmData, 'PNG', rx - tW/2, ry - tH/2, tW, tH);
+                        }
+                    }
+                    doc.restoreGraphicsState();
+                } catch(e) { console.warn('Watermark error:', e); }
+
+                // ══════════════════════════════════════════
+                //  HEADER BAND — blue bar with logo + title
+                // ══════════════════════════════════════════
+                doc.setFillColor(29, 78, 216);
+                doc.rect(0, 0, PW, 34, 'F');
+
+                // Subtle lighter stripe at top edge
+                doc.setFillColor(37, 99, 235);
+                doc.rect(0, 0, PW, 2, 'F');
+
+                // ── Logo (left side of header) ──
+                if (_pdfLogoBase64) {
+                    try {
+                        doc.addImage(_pdfLogoBase64, 'PNG', ML, 5, 95, 25);
+                    } catch(e) {
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(17);
+                        doc.setTextColor(255, 255, 255);
+                        doc.text('JK POWERGUARD', ML, 19);
+                    }
+                } else {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(17);
+                    doc.setTextColor(255, 255, 255);
+                    doc.text('JK POWERGUARD', ML, 19);
+                }
+
+                // Report info — right side of header
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9.5);
+                doc.setTextColor(219, 234, 254);
+                doc.text('Solar System — Investment & ROI Report', PW - MR, 12, { align: 'right' });
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(191, 219, 254);
+                doc.text(`Generated: ${dateStr}`, PW - MR, 19, { align: 'right' });
+                doc.text(`System: ${fmtDec(point1)} kW  |  ${fmtDec(point2)} kWh/kW/day  |  ${fmtDec(x)}% solar hrs`, PW - MR, 26, { align: 'right' });
+
+                y = 40;
+
+                // ══════════════════════════════════════════
+                //  SECTION 1 — 3-column info panel
+                //  Col A: System Parameters
+                //  Col B: Tariff Rates
+                //  Col C: System Sizing
+                // ══════════════════════════════════════════
+                const C3W = (BW - 4) / 3;   // ~59mm each
+                const CA  = ML;
+                const CB  = ML + C3W + 2;
+                const CC  = ML + 2 * (C3W + 2);
+
+                // Draw a small coloured pill-header for each column
+                const colHeader = (title, cx, color) => {
+                    doc.setFillColor(...color);
+                    doc.roundedRect(cx, y, C3W, 6.5, 1.5, 1.5, 'F');
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(255, 255, 255);
+                    doc.text(title, cx + C3W/2, y + 4.5, { align: 'center' });
+                };
+
+                // One data row in a column (label left, value right)
+                const colRow = (cx, cw, label, value, yPos, lblClr, valClr) => {
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(7.8);
+                    doc.setTextColor(...(lblClr || [71, 85, 105]));
+                    doc.text(label, cx + 1.5, yPos);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(7.8);
+                    doc.setTextColor(...(valClr || [15, 23, 42]));
+                    doc.text(String(value), cx + cw - 1.5, yPos, { align: 'right' });
+                    return yPos + 5.2;
+                };
+
+                colHeader('System Parameters', CA, [37, 99, 235]);
+                colHeader('Tariff Rates',       CB, [37, 99, 235]);
+                colHeader('System Sizing',       CC, [37, 99, 235]);
+
+                let yA = y + 8.5, yB = y + 8.5, yC = y + 8.5;
+
+                yA = colRow(CA, C3W, 'Solar Capacity',       `${fmtDec(point1)} kW`,  yA);
+                yA = colRow(CA, C3W, 'Daily Gen. / kW',      `${fmtDec(point2)} kWh`, yA);
+                yA = colRow(CA, C3W, 'Solar Hour Use',        `${fmtDec(x)} %`,        yA);
+                yA = colRow(CA, C3W, 'Non-Solar Use',         `${fmtDec(P)} %`,        yA);
+
+                yB = colRow(CB, C3W, 'Avg Unit Rate',         `Rs.${rate7a}/unit`,     yB);
+                yB = colRow(CB, C3W, 'Grid Support Charge',   `Rs.${gsc7b}/unit`,      yB);
+                yB = colRow(CB, C3W, 'Demand Charge',         `Rs.${point10}/kW/mo`,   yB);
+                yB = colRow(CB, C3W, 'Savings / Unit',        `Rs.${fmtDec(savPU)}`,   yB);
+
+                yC = colRow(CC, C3W, 'Solar Consumption',     `${fmtDec(yv)} kWh`,     yC);
+                yC = colRow(CC, C3W, 'Non-Solar Consumption', `${fmtDec(d)} kWh`,      yC);
+                yC = colRow(CC, C3W, 'Battery (Hybrid)',      `${fmtDec(bat)} kWh`,    yC);
+                yC = colRow(CC, C3W, 'Battery (Off-Grid)',    `${fmtDec(d * M_o)} kWh`, yC);
+
+                y = Math.max(yA, yB, yC) + 4;
+
+                // ── divider ──
                 doc.setDrawColor(203, 213, 225);
                 doc.setLineWidth(0.3);
                 doc.line(ML, y, PW - MR, y);
-                y += 6;
+                y += 4;
 
-                // ── section helper ───────────────────────
-                const sectionTitle = (title, color) => {
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(9);
-                    doc.setTextColor(...color);
-                    doc.text(title, ML, y);
-                    y += 5;
-                };
+                // ══════════════════════════════════════════
+                //  SECTION 2 — 2-column panel
+                //  Left:  Investment Options
+                //  Right: Monthly Savings
+                // ══════════════════════════════════════════
+                const C2W = (BW - 2) / 2;   // ~90mm each
+                const CI  = ML;
+                const CS  = ML + C2W + 2;
 
-                const infoRow = (label, value, labelColor=[51,65,85], valueColor=[15,23,42]) => {
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(8.5);
-                    doc.setTextColor(...labelColor);
-                    doc.text(label, ML + 2, y);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(...valueColor);
-                    doc.text(String(value), ML + 80, y);
-                    y += 5.5;
-                };
+                colHeader('Investment Options',       CI, [5, 150, 105]);
+                colHeader('Monthly Savings Summary',  CS, [5, 150, 105]);
 
-                // ── 2-column layout setup ────────────────
-                const COL1_X = ML;
-                const COL2_X = ML + 94;
-                const COL_W  = 88;
+                let yI = y + 8.5, yS = y + 8.5;
 
-                // save y for column sync
-                let col1Y = y;
+                yI = colRow(CI, C2W, 'Hybrid Upgrade',      Rs(c6a), yI, [71,85,105], [29,78,216]);
+                yI = colRow(CI, C2W, 'New Hybrid System',   Rs(c6b), yI, [71,85,105], [29,78,216]);
+                yI = colRow(CI, C2W, 'Off-Grid Upgrade',    Rs(c6c), yI, [71,85,105], [5,150,105]);
+                yI = colRow(CI, C2W, 'New Off-Grid System', Rs(c6d), yI, [71,85,105], [5,150,105]);
 
-                // === COLUMN 1 ===
-                y = col1Y;
-                sectionTitle('▸  System Parameters', [37, 99, 235]);
-                infoRow('Solar Capacity',           `${point1} kW`);
-                infoRow('Daily Generation (per kW)', `${point2} kWh`);
-                infoRow('Solar Hour Consumption',    `${x}%`);
-                infoRow('Non-Solar Consumption',     `${fmtDec(P)}%`);
-                y += 2;
-                sectionTitle('▸  Tariff Rates', [37, 99, 235]);
-                infoRow('Average Unit Rate',   `₹${rate7a}/unit`);
-                infoRow('Grid Support Charge', `₹${gsc7b}/unit`);
-                infoRow('Demand Charge',       `₹${point10}/kW/mo`);
-                y += 2;
-                sectionTitle('▸  System Sizing', [37, 99, 235]);
-                infoRow('Solar Consumption',        `${fmtDec(yv)} kWh`);
-                infoRow('Non-Solar Consumption',    `${fmtDec(d)} kWh`);
-                infoRow('Battery Bank (Hybrid)',    `${fmtDec(bat)} kWh`);
-                infoRow('Battery Bank (Off-Grid)',  `${fmtDec(d * M_o)} kWh`);
+                yS = colRow(CS, C2W, 'Savings per Unit',           Rs(savPU),                    yS);
+                yS = colRow(CS, C2W, 'Monthly Generation',         `${fmtDec(point2*DAYS*point1)} kWh`, yS);
+                yS = colRow(CS, C2W, 'Standard Monthly Savings',   Rs(monSav), yS, [71,85,105], [29,78,216]);
+                yS = colRow(CS, C2W, 'Off-Grid Monthly Savings',   Rs(totSav), yS, [71,85,105], [5,150,105]);
 
-                let col1End = y;
+                y = Math.max(yI, yS) + 4;
 
-                // === COLUMN 2 ===
-                y = col1Y;
-                // helper for column 2
-                const infoRow2 = (label, value, labelColor=[51,65,85], valueColor=[15,23,42]) => {
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(8.5);
-                    doc.setTextColor(...labelColor);
-                    doc.text(label, COL2_X + 2, y);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(...valueColor);
-                    doc.text(String(value), COL2_X + 54, y, { align: 'right' });
-                    y += 5.5;
-                };
-                const sectionTitle2 = (title, color) => {
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(9);
-                    doc.setTextColor(...color);
-                    doc.text(title, COL2_X, y);
-                    y += 5;
-                };
-
-                sectionTitle2('▸  Investment Costs', [16, 185, 129]);
-                infoRow2('Hybrid Upgrade',        fmtCur(c6a), [51,65,85], [29,78,216]);
-                infoRow2('New Hybrid System',      fmtCur(c6b), [51,65,85], [29,78,216]);
-                infoRow2('Off-Grid Upgrade',       fmtCur(c6c), [51,65,85], [5,150,105]);
-                infoRow2('New Off-Grid System',    fmtCur(c6d), [51,65,85], [5,150,105]);
-                y += 2;
-                sectionTitle2('▸  Savings Summary', [16, 185, 129]);
-                infoRow2('Savings per Unit',         fmtCur(savPU));
-                infoRow2('Standard Monthly Savings', fmtCur(monSav));
-                infoRow2('Off-Grid Monthly Savings', fmtCur(totSav));
-
-                let col2End = y;
-                y = Math.max(col1End, col2End) + 4;
-
-                // ── divider ──────────────────────────────
+                // ── divider ──
                 doc.setDrawColor(203, 213, 225);
                 doc.line(ML, y, PW - MR, y);
-                y += 6;
+                y += 4;
 
-                // ── ROI Table ────────────────────────────
+                // ══════════════════════════════════════════
+                //  SECTION 3 — ROI & Payback Table
+                // ══════════════════════════════════════════
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(9.5);
+                doc.setFontSize(8.5);
                 doc.setTextColor(15, 23, 42);
                 doc.text('ROI & Payback Summary', ML, y);
-                y += 6;
+                y += 4.5;
 
-                const tableHeaders = ['System Option', 'Investment', 'ROI (% p.a.)', 'Payback (Mo)', 'Payback (Yr)'];
-                const tableData = [
-                    ['Hybrid Upgrade',        fmtCur(c6a), `${fmtDec(roi6a)}%`, `${fmtDec(pb6a)} mo`, `${fmtDec(pb6a/12)} yr`],
-                    ['New Hybrid System',     fmtCur(c6b), `${fmtDec(roi6b)}%`, `${fmtDec(pb6b)} mo`, `${fmtDec(pb6b/12)} yr`],
-                    ['Off-Grid Upgrade',      fmtCur(c6c), `${fmtDec(roi6c)}%`, `${fmtDec(pb6c)} mo`, `${fmtDec(pb6c/12)} yr`],
-                    ['New Off-Grid System',   fmtCur(c6d), `${fmtDec(roi6d)}%`, `${fmtDec(pb6d)} mo`, `${fmtDec(pb6d/12)} yr`],
-                ];
+                const tCX = [ML, ML+52, ML+104, ML+140, ML+165];
+                const tHdrs = ['System Option', 'Investment (Rs.)', 'Annual ROI', 'Payback (Mo)', 'Payback (Yr)'];
+                const tAlns = ['left','right','right','right','right'];
+                const ROW_H = 7;
 
-                const colXs     = [ML, ML+52, ML+100, ML+132, ML+162];
-                const colAligns = ['left','right','right','right','right'];
-                const ROW_H     = 7.5;
-                const TBL_W     = PW - ML - MR;
-
-                // Header row
-                doc.setFillColor(37, 99, 235);
-                doc.roundedRect(ML, y, TBL_W, ROW_H, 2, 2, 'F');
+                // Table header row
+                doc.setFillColor(29, 78, 216);
+                doc.roundedRect(ML, y, BW, ROW_H, 1.5, 1.5, 'F');
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(8);
+                doc.setFontSize(7.5);
                 doc.setTextColor(255, 255, 255);
-                tableHeaders.forEach((h, i) => {
-                    const xPos = colAligns[i] === 'right' ? colXs[i] + (i < 4 ? colXs[i+1] - colXs[i] - 2 : TBL_W - colXs[i] + ML - 2) : colXs[i] + 2;
-                    doc.text(h, xPos, y + 5, { align: colAligns[i] });
+                tHdrs.forEach((h, i) => {
+                    const xp = tAlns[i] === 'right'
+                        ? (i < 4 ? tCX[i+1] - 1.5 : ML + BW - 1.5)
+                        : tCX[i] + 2;
+                    doc.text(h, xp, y + 4.8, { align: tAlns[i] });
                 });
                 y += ROW_H;
 
-                // Data rows
-                const rowColors = [[241,245,249],[255,255,255]];
-                tableData.forEach((row, ri) => {
-                    const isBlue  = ri < 2;
-                    const bgColor = ri % 2 === 0 ? rowColors[0] : rowColors[1];
-                    doc.setFillColor(...bgColor);
-                    doc.rect(ML, y, TBL_W, ROW_H, 'F');
-
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(8);
-
-                    row.forEach((cell, i) => {
-                        const roiColor = isBlue ? [29,78,216] : [5,150,105];
-                        if (i === 0) {
+                const rows = [
+                    ['Hybrid Upgrade',      Rs(c6a), `${fmtDec(roi6a)}%`, `${fmtDec(pb6a)} mo`, `${fmtDec(pb6a/12)} yr`, true],
+                    ['New Hybrid System',   Rs(c6b), `${fmtDec(roi6b)}%`, `${fmtDec(pb6b)} mo`, `${fmtDec(pb6b/12)} yr`, true],
+                    ['Off-Grid Upgrade',    Rs(c6c), `${fmtDec(roi6c)}%`, `${fmtDec(pb6c)} mo`, `${fmtDec(pb6c/12)} yr`, false],
+                    ['New Off-Grid System', Rs(c6d), `${fmtDec(roi6d)}%`, `${fmtDec(pb6d)} mo`, `${fmtDec(pb6d/12)} yr`, false],
+                ];
+                rows.forEach((row, ri) => {
+                    const isHybrid = row[5];
+                    doc.setFillColor(...(ri % 2 === 0 ? [241,245,249] : [255,255,255]));
+                    doc.rect(ML, y, BW, ROW_H, 'F');
+                    doc.setFontSize(7.5);
+                    row.slice(0,5).forEach((cell, ci) => {
+                        const roiClr = isHybrid ? [29,78,216] : [5,150,105];
+                        const xp = tAlns[ci] === 'right'
+                            ? (ci < 4 ? tCX[ci+1] - 1.5 : ML + BW - 1.5)
+                            : tCX[ci] + 2;
+                        if (ci === 0) {
                             doc.setFont('helvetica', 'bold');
                             doc.setTextColor(15, 23, 42);
-                            doc.text(cell, colXs[i] + 2, y + 5);
-                        } else if (i === 2) {
+                        } else if (ci === 2) {
                             doc.setFont('helvetica', 'bold');
-                            doc.setTextColor(...roiColor);
-                            const xPos = colXs[i] + (colXs[i+1] - colXs[i] - 2);
-                            doc.text(cell, xPos, y + 5, { align: 'right' });
+                            doc.setTextColor(...roiClr);
                         } else {
                             doc.setFont('helvetica', 'normal');
                             doc.setTextColor(51, 65, 85);
-                            const nextX = i < 4 ? colXs[i+1] : ML + TBL_W;
-                            doc.text(cell, nextX - 2, y + 5, { align: 'right' });
                         }
+                        doc.text(cell, xp, y + 4.8, { align: tAlns[ci] });
                     });
-
-                    // row border
                     doc.setDrawColor(226, 232, 240);
                     doc.setLineWidth(0.2);
-                    doc.line(ML, y + ROW_H, ML + TBL_W, y + ROW_H);
+                    doc.line(ML, y + ROW_H, ML + BW, y + ROW_H);
                     y += ROW_H;
                 });
 
-                y += 8;
-                // ── footer ───────────────────────────────
+                y += 5;
+
+                // ── divider ──
                 doc.setDrawColor(203, 213, 225);
+                doc.setLineWidth(0.3);
+                doc.line(ML, y, PW - MR, y);
+                y += 4;
+
+                // ══════════════════════════════════════════
+                //  SECTION 4 — Visual Analytics (Charts)
+                // ══════════════════════════════════════════
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8.5);
+                doc.setTextColor(15, 23, 42);
+                doc.text('Visual Analytics', ML, y);
+                y += 4;
+
+                // ── Canvas chart builder ─────────────────
+                const makeChart = (chartTitle, labels, values, colors, unitMode) => {
+                    const CW = 800, CH = 300;
+                    const c = document.createElement('canvas');
+                    c.width = CW; c.height = CH;
+                    const ctx = c.getContext('2d');
+
+                    // White background
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, CW, CH);
+
+                    // Light outer border
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(0, 0, CW, CH);
+
+                    // Chart title
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 15px sans-serif';
+                    ctx.fillText(chartTitle, 14, 22);
+
+                    // Chart area
+                    const padL = 68, padR = 18, padT = 38, padB = 68;
+                    const aW = CW - padL - padR;
+                    const aH = CH - padT - padB;
+
+                    const maxV  = Math.max(...values.map(Math.abs)) * 1.2 || 1;
+                    const barW  = (aW / labels.length) * 0.52;
+                    const barGp = (aW / labels.length) * 0.48;
+
+                    // Grid lines (5 horizontal)
+                    for (let i = 0; i <= 4; i++) {
+                        const gy = padT + aH - (aH * i / 4);
+                        ctx.strokeStyle = '#f1f5f9';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(padL, gy);
+                        ctx.lineTo(padL + aW, gy);
+                        ctx.stroke();
+
+                        // Y-axis labels
+                        const gv = maxV * i / 4;
+                        let gl;
+                        if (unitMode === 'currency') {
+                            gl = gv >= 100000 ? `${(gv/100000).toFixed(1)}L`
+                               : gv >= 1000   ? `${(gv/1000).toFixed(0)}K`
+                               : gv.toFixed(0);
+                        } else if (unitMode === 'percent') {
+                            gl = gv.toFixed(1) + '%';
+                        } else {
+                            gl = gv.toFixed(1) + ' mo';
+                        }
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.font = '11px sans-serif';
+                        ctx.textAlign = 'right';
+                        ctx.fillText(gl, padL - 5, gy + 4);
+                    }
+
+                    // Y-axis line
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(padL, padT);
+                    ctx.lineTo(padL, padT + aH);
+                    ctx.stroke();
+
+                    // X-axis line
+                    ctx.beginPath();
+                    ctx.moveTo(padL, padT + aH);
+                    ctx.lineTo(padL + aW, padT + aH);
+                    ctx.stroke();
+
+                    // Bars
+                    labels.forEach((lbl, i) => {
+                        const bh   = (Math.abs(values[i]) / maxV) * aH;
+                        const bx   = padL + i * (aW / labels.length) + barGp / 2;
+                        const by   = padT + aH - bh;
+                        const rad  = Math.min(5, barW / 2);
+
+                        // Gradient fill
+                        const grad = ctx.createLinearGradient(bx, by, bx, padT + aH);
+                        grad.addColorStop(0, colors[i]);
+                        grad.addColorStop(1, colors[i] + '99');
+                        ctx.fillStyle = grad;
+
+                        ctx.beginPath();
+                        ctx.moveTo(bx + rad, by);
+                        ctx.lineTo(bx + barW - rad, by);
+                        ctx.quadraticCurveTo(bx + barW, by, bx + barW, by + rad);
+                        ctx.lineTo(bx + barW, padT + aH);
+                        ctx.lineTo(bx, padT + aH);
+                        ctx.lineTo(bx, by + rad);
+                        ctx.quadraticCurveTo(bx, by, bx + rad, by);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // Value label above bar
+                        ctx.fillStyle = '#0f172a';
+                        ctx.font = 'bold 11px sans-serif';
+                        ctx.textAlign = 'center';
+                        let vl;
+                        if (unitMode === 'currency') {
+                            vl = values[i] >= 100000
+                                ? `${(values[i]/100000).toFixed(2)}L`
+                                : `${(values[i]/1000).toFixed(1)}K`;
+                        } else if (unitMode === 'percent') {
+                            vl = values[i].toFixed(2) + '%';
+                        } else {
+                            vl = values[i].toFixed(1) + ' mo';
+                        }
+                        ctx.fillText(vl, bx + barW / 2, by - 6);
+
+                        // X-axis label (word-wrapped)
+                        ctx.fillStyle = '#475569';
+                        ctx.font = '11px sans-serif';
+                        const words = lbl.split(' ');
+                        const line1 = words.slice(0, 2).join(' ');
+                        const line2 = words.slice(2).join(' ');
+                        ctx.fillText(line1, bx + barW / 2, padT + aH + 18);
+                        if (line2) ctx.fillText(line2, bx + barW / 2, padT + aH + 33);
+                        ctx.textAlign = 'left';
+                    });
+
+                    return c.toDataURL('image/png');
+                };
+
+                const sysLabels = [
+                    'Hybrid Upgrade',
+                    'New Hybrid System',
+                    'Off-Grid Upgrade',
+                    'New Off-Grid System'
+                ];
+                const barColors = ['#1d4ed8', '#3b82f6', '#059669', '#10b981'];
+
+                // Chart 1 — Investment (left half)
+                const ch1 = makeChart('Investment Comparison (Rs.)',
+                    sysLabels, [c6a, c6b, c6c, c6d], barColors, 'currency');
+                const halfW = (BW - 2) / 2;
+                doc.addImage(ch1, 'PNG', ML, y, halfW, 46);
+
+                // Chart 2 — Annual ROI % (right half)
+                const ch2 = makeChart('Annual ROI Comparison (%)',
+                    sysLabels, [roi6a, roi6b, roi6c, roi6d], barColors, 'percent');
+                doc.addImage(ch2, 'PNG', ML + halfW + 2, y, halfW, 46);
+
+                y += 50;
+
+                // Chart 3 — Payback Period in months (full width)
+                const ch3 = makeChart('Payback Period Comparison (Months)',
+                    sysLabels, [pb6a, pb6b, pb6c, pb6d], barColors, 'months');
+                doc.addImage(ch3, 'PNG', ML, y, BW, 50);
+
+                y += 54;
+
+                // ── footer ───────────────────────────────────────────────
+                doc.setDrawColor(203, 213, 225);
+                doc.setLineWidth(0.3);
                 doc.line(ML, y, PW - MR, y);
                 y += 5;
                 doc.setFont('helvetica', 'italic');
-                doc.setFontSize(7);
+                doc.setFontSize(6.5);
                 doc.setTextColor(148, 163, 184);
                 doc.text('This report is generated by the JK Powerguard Solar Calculator. Values are indicative and subject to site assessment.', ML, y);
                 y += 4;
-                doc.text('© JK Powerguard — Confidential', ML, y);
+                doc.text('(c) JK Powerguard -- Confidential', ML, y);
 
-                // ── save ─────────────────────────────────
                 const fileName = `JKPower_Solar_Report_${point1}kW_${dateStr.replace(/ /g,'_')}.pdf`;
                 doc.save(fileName);
 
             } catch (error) {
                 console.error("PDF Generation Failed:", error);
-                alert("Failed to generate PDF. If testing locally, ensure you are running a local server or that the image isn't being blocked by the browser.");
+                alert("Failed to generate PDF. If testing locally, ensure you are running a local server or that the image is not being blocked by the browser.");
             }
+        }
+
+        // ══════════════════════════════════════════════
+        //  PRE-CAPTURE LOGO AS BASE64 ON PAGE LOAD
+        //  This avoids canvas "tainted" errors inside
+        //  the PDF generator by capturing once from the
+        //  already-rendered <img> element, before any
+        //  cross-origin security kicks in.
+        // ══════════════════════════════════════════════
+        let _pdfLogoBase64 = null;
+
+        async function preCaptureLogo() {
+            // Strategy 1: draw the already-visible DOM img (fastest, same-origin safe)
+            const domImg = document.getElementById('company-logo');
+            if (domImg && domImg.complete && domImg.naturalWidth > 0) {
+                try {
+                    const c = document.createElement('canvas');
+                    c.width  = domImg.naturalWidth;
+                    c.height = domImg.naturalHeight;
+                    c.getContext('2d').drawImage(domImg, 0, 0);
+                    _pdfLogoBase64 = c.toDataURL('image/png');
+                    console.log('[PDF Logo] Captured from DOM img ✓');
+                    return;
+                } catch(e) {
+                    console.warn('[PDF Logo] DOM img canvas tainted, trying fetch fallback…');
+                }
+            }
+
+            // Strategy 2: fetch as blob → object URL → draw (bypasses taint for same-origin)
+            try {
+                const resp = await fetch('assets/images/jkpower_logo.png');
+                const blob = await resp.blob();
+                const url  = URL.createObjectURL(blob);
+                await new Promise((res, rej) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        try {
+                            const c = document.createElement('canvas');
+                            c.width  = img.naturalWidth  || 900;
+                            c.height = img.naturalHeight || 240;
+                            c.getContext('2d').drawImage(img, 0, 0);
+                            _pdfLogoBase64 = c.toDataURL('image/png');
+                            console.log('[PDF Logo] Captured via fetch/blob ✓');
+                        } catch(e) { console.warn('[PDF Logo] Blob canvas failed:', e); }
+                        URL.revokeObjectURL(url);
+                        res();
+                    };
+                    img.onerror = () => { URL.revokeObjectURL(url); rej(); };
+                    img.src = url;
+                });
+            } catch(e) {
+                console.warn('[PDF Logo] fetch fallback failed – PDF will use text header.');
+            }
+        }
+
+        // Run pre-capture after DOM img has loaded
+        const _domLogoEl = document.getElementById('company-logo');
+        if (_domLogoEl && _domLogoEl.complete) {
+            preCaptureLogo();
+        } else if (_domLogoEl) {
+            _domLogoEl.addEventListener('load', preCaptureLogo);
+            _domLogoEl.addEventListener('error', () => console.warn('[PDF Logo] DOM img failed to load.'));
         }
 
         // Initial Calculation on Load
