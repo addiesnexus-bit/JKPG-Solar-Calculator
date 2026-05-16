@@ -48,6 +48,21 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* ── Auto-resizing number inputs ── */
+        /* Inputs grow with content; min-width keeps them from collapsing */
+        .num-flex-input {
+            min-width: 3ch;
+            box-sizing: content-box;
+            transition: width 0.1s ease;
+        }
+        /* Hide spinner arrows — not needed when type is text/inputmode=decimal */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] { -moz-appearance: textfield; }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen p-4 md:p-8">
@@ -112,11 +127,11 @@
                                     <label class="block text-sm font-semibold text-slate-700">Solar Capacity</label>
                                 </div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
-                                    <input type="number" id="num_point1" min="0" max="999" step="0.001" value="20" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="text" inputmode="decimal" id="num_point1" value="20" class="num-flex-input text-right font-medium text-slate-800 outline-none">
                                     <span class="ml-1 text-sm font-medium text-slate-500">kW</span>
                                 </div>
                             </div>
-                            <input type="range" id="range_point1" min="0" max="999" step="0.001" value="20" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+
                         </div>
 
                         <!-- Input Group: Daily Generation -->
@@ -127,26 +142,37 @@
                                     <p class="text-xs text-slate-500 mt-0.5">(Per kW per day)</p>
                                 </div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
-                                    <input type="number" id="num_point2" min="3" max="6" step="0.001" value="4.5" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="text" inputmode="decimal" id="num_point2" value="4.5" class="num-flex-input text-right font-medium text-slate-800 outline-none">
                                     <span class="ml-1 text-sm font-medium text-slate-500">kWh</span>
                                 </div>
                             </div>
-                            <input type="range" id="range_point2" min="3" max="6" step="0.001" value="4.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+
                         </div>
 
-                        <!-- Input Group: Solar Hour Consumption -->
+                        <!-- Input Group: Solar Hrs / Non-Solar Hrs -->
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
-                            <div class="flex justify-between items-end mb-2">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="block text-sm font-semibold text-slate-700">Daily kWh Split</label>
+                                <span class="text-xs text-slate-400">Total: <span id="out_total_gen">90.00</span> kWh/day</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-sm font-semibold text-slate-700">Solar Hour Consumption.</label>
-                                    <p class="text-xs text-slate-500 mt-0.5">(9 AM - 5 PM)</p>
+                                    <p class="text-xs font-medium text-slate-500 mb-1.5">Solar Units</p>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-2 focus-within:border-blue-400 transition-colors">
+                                        <input type="text" inputmode="decimal" id="num_solar_hrs" value="72.00"
+                                            class="w-full text-right font-medium text-slate-800 outline-none text-sm">
+                                        <span class="ml-1.5 text-xs font-medium text-slate-400 flex-shrink-0">kWh</span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
-                                    <input type="number" id="num_x" min="0" max="100" step="0.001" value="80" class="w-16 text-right font-medium text-slate-800 outline-none">
-                                    <span class="ml-1 text-sm font-medium text-slate-500">%</span>
+                                <div>
+                                    <p class="text-xs font-medium text-slate-500 mb-1.5">Non-Solar Units</p>
+                                    <div class="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-2 focus-within:border-blue-400 transition-colors">
+                                        <input type="text" inputmode="decimal" id="num_nonsolar_hrs" value="18.00"
+                                            class="w-full text-right font-medium text-slate-800 outline-none text-sm">
+                                        <span class="ml-1.5 text-xs font-medium text-slate-400 flex-shrink-0">kWh</span>
+                                    </div>
                                 </div>
                             </div>
-                            <input type="range" id="range_x" min="0" max="100" step="0.001" value="80" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                         </div>
 
                     </div>
@@ -165,10 +191,9 @@
                                 <div><label class="block text-sm font-semibold text-slate-700">Average Unit Rate</label></div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                     <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
-                                    <input type="number" id="num_rate7a" min="0" max="50" step="0.5" value="15" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="text" inputmode="decimal" id="num_rate7a" value="15.00" class="num-flex-input text-right font-medium text-slate-800 outline-none">
                                 </div>
                             </div>
-                            <input type="range" id="range_rate7a" min="0" max="50" step="0.5" value="15" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                         </div>
 
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
@@ -176,10 +201,9 @@
                                 <div><label class="block text-sm font-semibold text-slate-700">Grid Support Charge</label></div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                     <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
-                                    <input type="number" id="num_gsc7b" min="0" max="20" step="0.1" value="2" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="text" inputmode="decimal" id="num_gsc7b" value="2.00" class="num-flex-input text-right font-medium text-slate-800 outline-none">
                                 </div>
                             </div>
-                            <input type="range" id="range_gsc7b" min="0" max="20" step="0.1" value="2" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                         </div>
 
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
@@ -190,10 +214,9 @@
                                 </div>
                                 <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                     <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
-                                    <input type="number" id="num_point10" min="0" max="5000" step="50" value="0" class="w-16 text-right font-medium text-slate-800 outline-none">
+                                    <input type="text" inputmode="decimal" id="num_point10" value="0" class="num-flex-input text-right font-medium text-slate-800 outline-none">
                                 </div>
                             </div>
-                            <input type="range" id="range_point10" min="0" max="5000" step="50" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                         </div>
 
                     </div>
@@ -229,7 +252,7 @@
                                     </div>
                                     <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                         <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
-                                        <input type="number" id="const_ongrid" min="1000" max="200000" step="500" value="13000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <input type="text" inputmode="decimal" id="const_ongrid" value="13000" class="num-flex-input text-right font-medium text-slate-800 outline-none" oninput="calculate()">
                                     </div>
                                 </div>
                                 <p class="text-xs text-right text-slate-400 mt-1">Default: ₹13,000 / kW</p>
@@ -244,7 +267,7 @@
                                     </div>
                                     <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                         <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
-                                        <input type="number" id="const_battery" min="1000" max="100000" step="500" value="16000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <input type="text" inputmode="decimal" id="const_battery" value="16000" class="num-flex-input text-right font-medium text-slate-800 outline-none" oninput="calculate()">
                                     </div>
                                 </div>
                                 <p class="text-xs text-right text-slate-400 mt-1">Default: ₹16,000 / kWh</p>
@@ -259,7 +282,7 @@
                                     </div>
                                     <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                         <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
-                                        <input type="number" id="const_hybrid_inv" min="1000" max="200000" step="500" value="27000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <input type="text" inputmode="decimal" id="const_hybrid_inv" value="27000" class="num-flex-input text-right font-medium text-slate-800 outline-none" oninput="calculate()">
                                     </div>
                                 </div>
                                 <p class="text-xs text-right text-slate-400 mt-1">Default: ₹27,000 / kW</p>
@@ -274,7 +297,7 @@
                                     </div>
                                     <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                         <span class="mr-1 text-sm font-medium text-slate-500">₹</span>
-                                        <input type="number" id="const_offgrid" min="1000" max="300000" step="500" value="40000" class="w-20 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <input type="text" inputmode="decimal" id="const_offgrid" value="40000" class="num-flex-input text-right font-medium text-slate-800 outline-none" oninput="calculate()">
                                     </div>
                                 </div>
                                 <p class="text-xs text-right text-slate-400 mt-1">Default: ₹40,000 / kW</p>
@@ -289,7 +312,7 @@
                                     </div>
                                     <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                         <span class="mr-1 text-sm font-medium text-slate-500">×</span>
-                                        <input type="number" id="const_hybrid_mult" min="1" max="3" step="0.05" value="1.25" class="w-16 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <input type="text" inputmode="decimal" id="const_hybrid_mult" value="1.25" class="num-flex-input text-right font-medium text-slate-800 outline-none" oninput="calculate()">
                                     </div>
                                 </div>
                                 <p class="text-xs text-right text-slate-400 mt-1">Default: 1.25× (25% extra)</p>
@@ -304,7 +327,7 @@
                                     </div>
                                     <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
                                         <span class="mr-1 text-sm font-medium text-slate-500">×</span>
-                                        <input type="number" id="const_offgrid_mult" min="1" max="5" step="0.1" value="2" class="w-16 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <input type="text" inputmode="decimal" id="const_offgrid_mult" value="2" class="num-flex-input text-right font-medium text-slate-800 outline-none" oninput="calculate()">
                                     </div>
                                 </div>
                                 <p class="text-xs text-right text-slate-400 mt-1">Default: 2× (100% extra)</p>
@@ -318,7 +341,7 @@
                                         <p class="text-xs text-slate-500 mt-0.5">Used in monthly savings calculation</p>
                                     </div>
                                     <div class="flex items-center bg-white border border-slate-200 rounded-md px-2 py-1">
-                                        <input type="number" id="const_days" min="28" max="31" step="1" value="30" class="w-16 text-right font-medium text-slate-800 outline-none" oninput="calculate()">
+                                        <input type="text" inputmode="decimal" id="const_days" value="30" class="num-flex-input text-right font-medium text-slate-800 outline-none" oninput="calculate()">
                                         <span class="ml-1 text-sm font-medium text-slate-500">days</span>
                                     </div>
                                 </div>
@@ -378,17 +401,27 @@
 
                 <!-- Investment Costs -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between flex-wrap gap-3">
                         <h2 class="text-lg font-bold text-slate-800">Investment & Costs</h2>
+                        <div class="flex items-center bg-slate-200 rounded-lg p-1 gap-1">
+                            <button id="btn_upgrade" onclick="setViewMode('upgrade')"
+                                class="px-4 py-1.5 rounded-md text-sm font-semibold transition-all duration-150 bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-200">
+                                Upgrade
+                            </button>
+                            <button id="btn_newsystem" onclick="setViewMode('newsystem')"
+                                class="px-4 py-1.5 rounded-md text-sm font-semibold transition-all duration-150 text-slate-400 line-through">
+                                Entire New System
+                            </button>
+                        </div>
                     </div>
                     <div class="p-5">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            
-                            <!-- Hybrid Costs -->
-                            <div class="space-y-4">
+
+                            <!-- Hybrid Upgrade cost (shown for "upgrade" mode) -->
+                            <div id="cost_card_6a" class="space-y-4">
                                 <h3 class="font-semibold text-slate-700 flex items-center">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    Hybrid Options (25% Extra Battery)
+                                    Hybrid (25% Extra Battery)
                                 </h3>
                                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
                                     <div class="flex justify-between items-center mb-1">
@@ -396,6 +429,14 @@
                                         <span class="font-bold text-blue-900" id="out_cost6a">₹0</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- New Hybrid System cost (shown for "newsystem" mode) -->
+                            <div id="cost_card_6b" class="space-y-4 hidden">
+                                <h3 class="font-semibold text-slate-700 flex items-center">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    Hybrid (25% Extra Battery)
+                                </h3>
                                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
                                     <div class="flex justify-between items-center mb-1">
                                         <span class="text-sm text-blue-800">Entire New Hybrid System</span>
@@ -404,11 +445,11 @@
                                 </div>
                             </div>
 
-                            <!-- Off-Grid Costs -->
-                            <div class="space-y-4">
+                            <!-- Off-Grid Upgrade cost (shown for "upgrade" mode) -->
+                            <div id="cost_card_6c" class="space-y-4">
                                 <h3 class="font-semibold text-slate-700 flex items-center">
                                     <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
-                                    Off-Grid Options (100% Extra Battery)
+                                    Off-Grid (100% Extra Battery)
                                 </h3>
                                 <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                                     <div class="flex justify-between items-center mb-1">
@@ -416,6 +457,14 @@
                                         <span class="font-bold text-emerald-900" id="out_cost6c">₹0</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- New Off-Grid System cost (shown for "newsystem" mode) -->
+                            <div id="cost_card_6d" class="space-y-4 hidden">
+                                <h3 class="font-semibold text-slate-700 flex items-center">
+                                    <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+                                    Off-Grid (100% Extra Battery)
+                                </h3>
                                 <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                                     <div class="flex justify-between items-center mb-1">
                                         <span class="text-sm text-emerald-800">Entire New Off-Grid System</span>
@@ -462,19 +511,19 @@
                                     </tr>
                                 </thead>
                                 <tbody class="text-sm">
-                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                    <tr id="roi_row_6a" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                         <td class="py-3 px-4 font-medium text-slate-800">Hybrid Upgrade</td>
                                         <td class="py-3 px-4 text-right text-emerald-600 font-bold" id="tbl_roi_6a">0.00%</td>
                                         <td class="py-3 px-4 text-right font-medium" id="tbl_payback_mo_6a">0.00 mo</td>
                                         <td class="py-3 px-4 text-right text-slate-500" id="tbl_payback_yr_6a">0.00 yr</td>
                                     </tr>
-                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                    <tr id="roi_row_6b" class="border-b border-slate-100 hover:bg-slate-50 transition-colors hidden">
                                         <td class="py-3 px-4 font-medium text-slate-800">New Hybrid System</td>
                                         <td class="py-3 px-4 text-right text-emerald-600 font-bold" id="tbl_roi_6b">0.00%</td>
                                         <td class="py-3 px-4 text-right font-medium" id="tbl_payback_mo_6b">0.00 mo</td>
                                         <td class="py-3 px-4 text-right text-slate-500" id="tbl_payback_yr_6b">0.00 yr</td>
                                     </tr>
-                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                    <tr id="roi_row_6c" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                         <td class="py-3 px-4 font-medium text-slate-800">
                                             Off-Grid Upgrade
                                             <span class="block text-xs text-slate-400 font-normal mt-0.5">Includes demand charge savings</span>
@@ -483,7 +532,7 @@
                                         <td class="py-3 px-4 text-right font-medium" id="tbl_payback_mo_6c">0.00 mo</td>
                                         <td class="py-3 px-4 text-right text-slate-500" id="tbl_payback_yr_6c">0.00 yr</td>
                                     </tr>
-                                    <tr class="hover:bg-slate-50 transition-colors">
+                                    <tr id="roi_row_6d" class="hover:bg-slate-50 transition-colors hidden">
                                         <td class="py-3 px-4 font-medium text-slate-800">
                                             New Off-Grid System
                                             <span class="block text-xs text-slate-400 font-normal mt-0.5">Includes demand charge savings</span>
@@ -616,6 +665,25 @@
         // Initialize Icons
         lucide.createIcons();
 
+        // ── Auto-resize inputs (grow/shrink with typed content) ──────────
+        // Uses 'ch' units (≈ width of "0" in current font) so sizing is
+        // proportional to the actual digits being shown.
+        function autoResizeInput(el) {
+            const len = (el.value || '0').length;
+            // +1.2ch gives a little right-side breathing room
+            el.style.width = Math.max(3, len + 1.2) + 'ch';
+        }
+
+        // Resize every .num-flex-input now and on every keystroke
+        function resizeAllFlexInputs() {
+            document.querySelectorAll('.num-flex-input').forEach(autoResizeInput);
+        }
+
+        document.querySelectorAll('.num-flex-input').forEach(function (inp) {
+            autoResizeInput(inp);                                    // size on load
+            inp.addEventListener('input', function () { autoResizeInput(this); }); // size while typing
+        });
+
         // Utility formatters
         const formatCurrency = (value) => {
             if (!isFinite(value)) return '₹0';
@@ -627,13 +695,13 @@
         };
 
         const formatDecimal = (value) => {
-            if (!isFinite(value)) return '0.000';
-            return Number(value).toFixed(3);
+            if (!isFinite(value)) return '0.00';
+            return Number(value).toFixed(2);
         };
 
         // State definition mapped to inputs
         const inputs = [
-            'point1', 'point2', 'x', 'rate7a', 'gsc7b', 'point10'
+            'point1', 'point2', 'rate7a', 'gsc7b', 'point10'
         ];
 
         // Element caches
@@ -648,13 +716,89 @@
 
             const updateValue = (val) => {
                 numEl.value = val;
-                rangeEl.value = val;
+                if (rangeEl) rangeEl.value = val;
+                // When solar capacity or daily generation changes, rescale A and B
+                if (id === 'point1' || id === 'point2') applyHoursFromRatio();
                 calculate();
             };
 
             numEl.addEventListener('input', (e) => updateValue(e.target.value));
-            rangeEl.addEventListener('input', (e) => updateValue(e.target.value));
+            if (rangeEl) rangeEl.addEventListener('input', (e) => updateValue(e.target.value));
         });
+
+        // ── Solar Hrs (A) / Non-Solar Hrs (B) logic ──────────────────────
+        // Tracks the solar share as a ratio so it survives capacity changes.
+        let solarRatio = 0.8; // default 80 % solar
+
+        function getGenTotal() {
+            const p1 = parseFloat(domElements.point1.num.value) || 0;
+            const p2 = parseFloat(domElements.point2.num.value) || 0;
+            return p1 * p2;
+        }
+
+        // Re-apply stored ratio whenever total generation changes
+        function applyHoursFromRatio() {
+            const total = getGenTotal();
+            const a = total * solarRatio;
+            const b = total - a;
+            document.getElementById('num_solar_hrs').value    = a.toFixed(2);
+            document.getElementById('num_nonsolar_hrs').value = b.toFixed(2);
+        }
+
+        // When user edits Solar Hrs (A)
+        document.getElementById('num_solar_hrs').addEventListener('input', function () {
+            const total = getGenTotal();
+            const a = Math.min(Math.max(parseFloat(this.value) || 0, 0), total);
+            const b = total - a;
+            solarRatio = total > 0 ? a / total : solarRatio;
+            document.getElementById('num_nonsolar_hrs').value = b.toFixed(2);
+            calculate();
+        });
+
+        // When user edits Non-Solar Hrs (B)
+        document.getElementById('num_nonsolar_hrs').addEventListener('input', function () {
+            const total = getGenTotal();
+            const b = Math.min(Math.max(parseFloat(this.value) || 0, 0), total);
+            const a = total - b;
+            solarRatio = total > 0 ? a / total : solarRatio;
+            document.getElementById('num_solar_hrs').value = a.toFixed(2);
+            calculate();
+        });
+
+        // ── View Mode Toggle (Investment & ROI sections) ──────────────────
+        let currentViewMode = 'upgrade'; // default
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            const isUpgrade = mode === 'upgrade';
+
+            // Toggle button styles
+            const btnUpgrade   = document.getElementById('btn_upgrade');
+            const btnNewSystem = document.getElementById('btn_newsystem');
+            if (isUpgrade) {
+                // Upgrade = active (green hue)
+                btnUpgrade.className   = 'px-4 py-1.5 rounded-md text-sm font-semibold transition-all duration-150 bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-200';
+                // Entire New System = inactive (strikethrough)
+                btnNewSystem.className = 'px-4 py-1.5 rounded-md text-sm font-semibold transition-all duration-150 text-slate-400 line-through';
+            } else {
+                // Entire New System = active (green hue)
+                btnNewSystem.className = 'px-4 py-1.5 rounded-md text-sm font-semibold transition-all duration-150 bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-200';
+                // Upgrade = inactive (strikethrough)
+                btnUpgrade.className   = 'px-4 py-1.5 rounded-md text-sm font-semibold transition-all duration-150 text-slate-400 line-through';
+            }
+
+            // Investment & Costs cards
+            document.getElementById('cost_card_6a').classList.toggle('hidden', !isUpgrade);
+            document.getElementById('cost_card_6c').classList.toggle('hidden', !isUpgrade);
+            document.getElementById('cost_card_6b').classList.toggle('hidden', isUpgrade);
+            document.getElementById('cost_card_6d').classList.toggle('hidden', isUpgrade);
+
+            // ROI table rows
+            document.getElementById('roi_row_6a').classList.toggle('hidden', !isUpgrade);
+            document.getElementById('roi_row_6c').classList.toggle('hidden', !isUpgrade);
+            document.getElementById('roi_row_6b').classList.toggle('hidden', isUpgrade);
+            document.getElementById('roi_row_6d').classList.toggle('hidden', isUpgrade);
+        }
 
         // DOM Output Elements
         const outputs = {
@@ -691,7 +835,8 @@
             // Get current values
             const point1 = parseFloat(domElements.point1.num.value) || 0;
             const point2 = parseFloat(domElements.point2.num.value) || 0;
-            const x = parseFloat(domElements.x.num.value) || 0;
+            const solarHrs    = parseFloat(document.getElementById('num_solar_hrs').value)    || 0;
+            const nonSolarHrs = parseFloat(document.getElementById('num_nonsolar_hrs').value) || 0;
             const rate7a = parseFloat(domElements.rate7a.num.value) || 0;
             const gsc7b = parseFloat(domElements.gsc7b.num.value) || 0;
             const point10 = parseFloat(domElements.point10.num.value) || 0;
@@ -705,10 +850,12 @@
             const M_offgrid     = parseFloat(document.getElementById('const_offgrid_mult').value)|| 2;
             const DAYS          = parseFloat(document.getElementById('const_days').value)        || 30;
 
-            // 3. & 4. Solar vs Non-Solar Consumption (total kWh/day, scaled by capacity)
-            const yv = (x / 100) * point2 * point1;
-            const P = 100 - x;
-            const d = (P / 100) * point2 * point1;
+            // 3. & 4. Solar vs Non-Solar Consumption (direct kWh inputs from user)
+            const total_gen = point1 * point2;
+            const yv  = solarHrs;
+            const d   = nonSolarHrs;
+            const x_pct = total_gen > 0 ? (yv / total_gen) * 100 : 0;
+            const P_pct = total_gen > 0 ? (d  / total_gen) * 100 : 0;
 
             // 5. Battery Bank (based on total non-solar daily kWh)
             const battery = d * M_hybrid;
@@ -721,9 +868,10 @@
 
             // 7. Tariff & Savings
             const savingsPerUnit7c = rate7a - gsc7b;
-            const monthlySavings = point2 * DAYS * point1 * savingsPerUnit7c;
+            const monthlySavings = point2 * DAYS * point1 * savingsPerUnit7c;       // Hybrid: uses (rate7a - gsc7b)
+            const monthlySavingsOffGrid = point2 * DAYS * point1 * rate7a;          // Off-Grid: uses full rate7a
             const monthlyDemandSavings = point10 * point1;
-            const totalMonthlySavingsOffGrid = monthlySavings + monthlyDemandSavings;
+            const totalMonthlySavingsOffGrid = monthlySavingsOffGrid + monthlyDemandSavings;
 
             // 8 & 9. Hybrid ROI & Payback
             const roi6a = cost6a > 0 ? ((12 * monthlySavings) / cost6a) * 100 : 0;
@@ -741,10 +889,14 @@
 
             // Update DOM
             outputs.y.innerText = formatDecimal(yv);
-            outputs.x_percent.innerText = formatDecimal(x);
+            outputs.x_percent.innerText = formatDecimal(x_pct);
             outputs.d.innerText = formatDecimal(d);
-            outputs.p_percent.innerText = formatDecimal(P);
+            outputs.p_percent.innerText = formatDecimal(P_pct);
             outputs.battery.innerText = formatDecimal(battery);
+
+            // Update total gen display in input panel
+            const totalGenEl = document.getElementById('out_total_gen');
+            if (totalGenEl) totalGenEl.innerText = total_gen.toFixed(2);
             
             outputs.cost6a.innerText = formatCurrency(cost6a);
             outputs.cost6b.innerText = formatCurrency(cost6b);
@@ -795,6 +947,7 @@
             document.getElementById('const_hybrid_mult').value= 1.25;
             document.getElementById('const_offgrid_mult').value= 2;
             document.getElementById('const_days').value       = 30;
+            resizeAllFlexInputs(); // re-size boxes after programmatic value change
             calculate();
         }
 
@@ -895,12 +1048,13 @@
                 // ── helpers (use Rs. — jsPDF helvetica doesn't render ₹) ──
                 const Rs = (v) => !isFinite(v) ? 'Rs.0'
                     : 'Rs.' + Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 });
-                const fmtDec = (v) => (!isFinite(v) ? '0.000' : Number(v).toFixed(3));
+                const fmtDec = (v) => (!isFinite(v) ? '0.00' : Number(v).toFixed(2));
 
                 // ── gather live values ────────────────────
-                const point1  = parseFloat(document.getElementById('num_point1').value)  || 0;
-                const point2  = parseFloat(document.getElementById('num_point2').value)  || 0;
-                const x       = parseFloat(document.getElementById('num_x').value)       || 0;
+                const point1     = parseFloat(document.getElementById('num_point1').value)      || 0;
+                const point2     = parseFloat(document.getElementById('num_point2').value)      || 0;
+                const solarHrs   = parseFloat(document.getElementById('num_solar_hrs').value)   || 0;
+                const nonSolHrs  = parseFloat(document.getElementById('num_nonsolar_hrs').value)|| 0;
                 const rate7a  = parseFloat(document.getElementById('num_rate7a').value)  || 0;
                 const gsc7b   = parseFloat(document.getElementById('num_gsc7b').value)   || 0;
                 const point10 = parseFloat(document.getElementById('num_point10').value) || 0;
@@ -912,9 +1066,11 @@
                 const M_o     = parseFloat(document.getElementById('const_offgrid_mult').value) || 2;
                 const DAYS    = parseFloat(document.getElementById('const_days').value)         || 30;
 
-                const P   = 100 - x;
-                const yv  = (x / 100) * point2 * point1;
-                const d   = (P / 100) * point2 * point1;
+                const total_gen = point1 * point2;
+                const yv  = solarHrs;
+                const d   = nonSolHrs;
+                const x_pct = total_gen > 0 ? (yv / total_gen) * 100 : 0;
+                const P_pct = total_gen > 0 ? (d  / total_gen) * 100 : 0;
                 const bat = d * M_h;
 
                 const c6a = (C_ong * point1) + (C_bat * bat);
@@ -923,9 +1079,10 @@
                 const c6d = (C_ofg * point1) + (C_bat * M_o * d);
 
                 const savPU  = rate7a - gsc7b;
-                const monSav = point2 * DAYS * point1 * savPU;
+                const monSav = point2 * DAYS * point1 * savPU;          // Hybrid: uses (rate7a - gsc7b)
+                const monSavOffGrid = point2 * DAYS * point1 * rate7a;  // Off-Grid: uses full rate7a
                 const demSav = point10 * point1;
-                const totSav = monSav + demSav;
+                const totSav = monSavOffGrid + demSav;
 
                 const roi6a = c6a > 0 ? ((12 * monSav) / c6a) * 100 : 0;
                 const roi6b = c6b > 0 ? ((12 * monSav) / c6b) * 100 : 0;
@@ -1012,7 +1169,7 @@
                 doc.setFontSize(7.5);
                 doc.setTextColor(191, 219, 254);
                 doc.text(`Generated: ${dateStr}`, PW - MR, 19, { align: 'right' });
-                doc.text(`System: ${fmtDec(point1)} kW  |  ${fmtDec(point2)} kWh/kW/day  |  ${fmtDec(x)}% solar hrs`, PW - MR, 26, { align: 'right' });
+                doc.text(`System: ${fmtDec(point1)} kW  |  ${fmtDec(point2)} kWh/kW/day  |  Solar: ${fmtDec(yv)} kWh / Non-Solar: ${fmtDec(d)} kWh`, PW - MR, 26, { align: 'right' });
 
                 y = 40;
 
@@ -1058,8 +1215,8 @@
 
                 yA = colRow(CA, C3W, 'Solar Capacity',       `${fmtDec(point1)} kW`,  yA);
                 yA = colRow(CA, C3W, 'Daily Gen. / kW',      `${fmtDec(point2)} kWh`, yA);
-                yA = colRow(CA, C3W, 'Solar Hour Use',        `${fmtDec(x)} %`,        yA);
-                yA = colRow(CA, C3W, 'Non-Solar Use',         `${fmtDec(P)} %`,        yA);
+                yA = colRow(CA, C3W, 'Solar Hrs. (A)',        `${fmtDec(yv)} kWh`,     yA);
+                yA = colRow(CA, C3W, 'Non-Solar Hrs. (B)',    `${fmtDec(d)} kWh`,      yA);
 
                 yB = colRow(CB, C3W, 'Avg Unit Rate',         `Rs.${rate7a}/unit`,     yB);
                 yB = colRow(CB, C3W, 'Grid Support Charge',   `Rs.${gsc7b}/unit`,      yB);
